@@ -107,11 +107,30 @@ router.get('/:id', async (req, res) => {
       return;
     }
 
-    // For now, return a placeholder — full implementation would read from contract or DB
-    res.json({
-      escrowId,
-      note: 'Escrow status tracking via MongoDB. Contract read requires additional setup.',
-    });
+    if (!escrowService.isConfigured()) {
+      res.json({
+        escrowId,
+        status: 'unknown',
+        note: 'Escrow contract not deployed. Set ESCROW_CONTRACT_ADDRESS in .env to enable on-chain reads.',
+        etherscan: `https://sepolia.etherscan.io/address/${process.env.CAW_ETH_ADDRESS}`,
+      });
+      return;
+    }
+
+    const escrow = await escrowService.getEscrow(escrowId);
+    if (escrow) {
+      res.json({
+        ...escrow,
+        etherscan: `https://sepolia.etherscan.io/address/${process.env.ESCROW_CONTRACT_ADDRESS}`,
+      });
+    } else {
+      res.json({
+        escrowId,
+        status: 'unknown',
+        note: 'Could not read escrow from contract. It may not exist or the read call is not supported via CAW.',
+        etherscan: `https://sepolia.etherscan.io/address/${process.env.ESCROW_CONTRACT_ADDRESS}`,
+      });
+    }
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch escrow status' });
   }

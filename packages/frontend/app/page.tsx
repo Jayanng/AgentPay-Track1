@@ -5,6 +5,7 @@ import { WalletConnect } from "@/components/wallet-connect";
 import { useAuth } from "@/components/providers/auth-provider";
 import { PublicNavbar } from "@/components/public-navbar";
 import { CawStatusPanel } from "@/components/caw-status-panel";
+import { HackathonBadge } from "@/components/hackathon-badge";
 import {
   Code,
   FileText,
@@ -26,6 +27,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased overflow-x-hidden">
+      <HackathonBadge />
       <PublicNavbar />
 
       {/* CAW Status Panel — visible at top of page */}

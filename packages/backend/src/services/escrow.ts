@@ -3,7 +3,7 @@
  * Uses Cobo CAW contract-call API to interact with the deployed AgentPayEscrow contract.
  */
 
-import { encodeFunctionData, parseEther } from 'viem';
+import { encodeFunctionData, keccak256, toBytes, parseEther } from 'viem';
 import { cawService } from './cobo-caw';
 
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS || '';
@@ -72,6 +72,8 @@ const ESCROW_ABI = [
   },
 ] as const;
 
+const ESCROW_STATUS_NAMES = ['Pending', 'Delivered', 'Released', 'Refunded', 'Disputed'] as const;
+
 export interface EscrowDetails {
   escrowId: string;
   buyer: string;
@@ -81,6 +83,19 @@ export interface EscrowDetails {
   status: 'Pending' | 'Delivered' | 'Released' | 'Refunded' | 'Disputed';
   createdAt: number;
   deadline: number;
+}
+
+/**
+ * Convert a string resourceId to a proper bytes32 using keccak256.
+ * This ensures consistent, correct encoding for the smart contract.
+ */
+function resourceIdToBytes32(resourceId: string): `0x${string}` {
+  // If already a valid bytes32 hex string, use it directly
+  if (resourceId.startsWith('0x') && resourceId.length === 66) {
+    return resourceId as `0x${string}`;
+  }
+  // Otherwise hash the string to get a deterministic bytes32
+  return keccak256(toBytes(resourceId));
 }
 
 export class EscrowService {
@@ -99,13 +114,13 @@ export class EscrowService {
       throw new Error('ESCROW_CONTRACT_ADDRESS not configured');
     }
 
-    // Convert resourceId string to bytes32
-    const resourceIdHex = `0x${resourceId.padEnd(64, '0')}` as `0x${string}`;
+    // Convert resourceId string to bytes32 using keccak256
+    const resourceIdBytes32 = resourceIdToBytes32(resourceId);
 
     const calldata = encodeFunctionData({
       abi: ESCROW_ABI,
       functionName: 'createEscrow',
-      args: [seller as `0x${string}`, resourceIdHex as `0x${string}`],
+      args: [seller as `0x${string}`, resourceIdBytes32],
     });
 
     // Convert amount to wei value for the contract call
@@ -195,9 +210,51 @@ export class EscrowService {
     );
   }
 
-  // For now, escrow status tracking is done via MongoDB since
-  // reading from contract requires a read-call setup.
-  // The CAW contract-call returns a transaction result that can be tracked.
+  /**
+   * Get escrow details by calling the view function on the contract.
+   * Note: This uses CAW contractCall which may not support read operations.
+   * For read operations, consider using a direct RPC provider instead.
+   */
+  async getEscrow(escrowId: number): Promise<EscrowDetails | null> {
+    if (!this.isConfigured()) {
+      return null;
+    }
+
+    try {
+      const calldata = encodeFunctionData({
+        abi: ESCROW_ABI,
+        functionName: 'getEscrow',
+        args: [BigInt(escrowId)],
+      });
+
+      const result = await cawService.contractCall(
+        this.contractAddress as `0x${string}`,
+        calldata,
+        '0',
+        'SETH'
+      );
+
+      // Parse the result if available
+      if (result?.data) {
+        const data = result.data;
+        const statusIndex = Number(data.status ?? data[4] ?? 0);
+        return {
+          escrowId: String(escrowId),
+          buyer: data.buyer ?? data[0] ?? '',
+          seller: data.seller ?? data[1] ?? '',
+          amount: data.amount?.toString() ?? data[2]?.toString() ?? '0',
+          resourceId: data.resourceId ?? data[3] ?? '',
+          status: ESCROW_STATUS_NAMES[statusIndex] || 'Pending',
+          createdAt: Number(data.createdAt ?? data[5] ?? 0),
+          deadline: Number(data.deadline ?? data[6] ?? 0),
+        };
+      }
+      return null;
+    } catch (error: any) {
+      console.warn('[Escrow] getEscrow read call failed:', error.message);
+      return null;
+    }
+  }
 }
 
 export const escrowService = new EscrowService();

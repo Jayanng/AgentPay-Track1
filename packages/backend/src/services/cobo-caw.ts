@@ -123,6 +123,7 @@ export class CoboCAWService {
       return ethBalance?.amount ?? ethBalance?.total ?? '0';
     } catch (error: any) {
       parseCawError(error);
+      return '0'; // unreachable but satisfies TypeScript
     }
   }
 
@@ -132,6 +133,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
+      return null; // unreachable
     }
   }
 
@@ -165,6 +167,7 @@ export class CoboCAWService {
       throw new Error('Unexpected transfer response');
     } catch (error: any) {
       parseCawError(error);
+      return { status: 'error' }; // unreachable
     }
   }
 
@@ -186,6 +189,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
+      return null; // unreachable
     }
   }
 
@@ -195,6 +199,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
+      return null; // unreachable
     }
   }
 
@@ -211,6 +216,7 @@ export class CoboCAWService {
       return data?.result?.items ?? data?.result?.list ?? data?.items ?? data?.list ?? [];
     } catch (error: any) {
       parseCawError(error);
+      return []; // unreachable
     }
   }
 
@@ -225,6 +231,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
+      return null; // unreachable
     }
   }
 
@@ -247,6 +254,7 @@ export class CoboCAWService {
       };
     } catch (error: any) {
       parseCawError(error);
+      return { id: '', status: 'error' }; // unreachable
     }
   }
 
@@ -264,6 +272,7 @@ export class CoboCAWService {
       };
     } catch (error: any) {
       parseCawError(error);
+      return { id: '', status: 'error' }; // unreachable
     }
   }
 
@@ -281,6 +290,7 @@ export class CoboCAWService {
       }));
     } catch (error: any) {
       parseCawError(error);
+      return []; // unreachable
     }
   }
 
@@ -290,6 +300,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
+      return null; // unreachable
     }
   }
 

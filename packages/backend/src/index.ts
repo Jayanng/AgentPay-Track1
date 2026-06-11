@@ -129,8 +129,6 @@ app.use("/", profileRoutes);
 
 // CAW (Cobo Agentic Wallet)
 app.use("/api/caw", cawRoutes);
-app.use("/api/pacts", cawRoutes);
-app.use("/api/demo", cawRoutes);
 
 // Escrow
 app.use("/api/escrow", escrowRoutes);
@@ -252,11 +250,20 @@ async function startServer() {
 
     // Start Express server
     app.listen(PORT, () => {
-      console.log(`\n${"=".repeat(50)}`);
-      console.log(`  x402 Everything Server`);
-      console.log(`  Port: ${PORT}`);
-      console.log(`  Database: MongoDB`);
-      console.log(`${"=".repeat(50)}`);
+      const walletMode = process.env.WALLET_MODE || 'direct';
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`  AgentPay — AI × Web3 Hackathon (Track 1)`);
+      console.log(`${"=".repeat(60)}`);
+      console.log(`  Port:       ${PORT}`);
+      console.log(`  Database:   MongoDB`);
+      console.log(`  Wallet:     ${walletMode === 'caw' ? 'Cobo Agentic Wallet (CAW)' : 'Direct (Private Key)'}`);
+      if (walletMode === 'caw') {
+        console.log(`  CAW API:    ${process.env.CAW_API_URL}`);
+        console.log(`  Wallet UUID:${process.env.CAW_WALLET_UUID}`);
+        console.log(`  ETH Addr:   ${process.env.CAW_ETH_ADDRESS}`);
+        console.log(`  Chain:      ${process.env.CHAIN || 'SETH'}`);
+      }
+      console.log(`${"=".repeat(60)}`);
       console.log(`\nEndpoints:`);
       console.log(`  Auth:      POST /api/auth/nonce, /api/auth/verify`);
       console.log(`  Resources: GET/POST /api/resources`);
@@ -267,7 +274,11 @@ async function startServer() {
       console.log(`  MCP:       POST /mcp`);
       console.log(`  A2A:       POST /a2a`);
       console.log(`  AgentCard: GET  /.well-known/agent.json`);
-      console.log(`${"=".repeat(50)}\n`);
+      console.log(`  CAW:       GET  /api/caw/wallet, /api/caw/health, /api/caw/balance`);
+      console.log(`  Pacts:     GET  /api/caw/pacts, POST /api/caw/submit`);
+      console.log(`  Escrow:    POST /api/escrow/create, /api/escrow/:id/confirm, /api/escrow/:id/release`);
+      console.log(`  Demo:      POST /api/caw/blocked-transaction, /api/caw/allowed-transaction`);
+      console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
