@@ -11,7 +11,6 @@
 
 import { Configuration, PactsApi, TransactionsApi, WalletsApi } from '@cobo/agentic-wallet';
 import { BalanceApi, TransactionRecordsApi } from '@cobo/agentic-wallet';
-import axios from 'axios';
 
 const CAW_API_KEY = process.env.CAW_API_KEY!;
 const CAW_API_URL = process.env.CAW_API_URL || 'https://api.agenticwallet.cobo.com';
@@ -36,14 +35,27 @@ const walletsApi: any = new WalletsApi(config);
 const balanceApi: any = new BalanceApi(config);
 const txRecordsApi: any = new TransactionRecordsApi(config);
 
-// Direct axios instance for API calls that need fields not in SDK types (like pact_id)
-const cawAxios = axios.create({
-  baseURL: CAW_API_URL,
-  headers: {
-    'X-API-Key': CAW_API_KEY,
-    'Content-Type': 'application/json',
-  },
-});
+// Direct fetch helper for API calls that need fields not in SDK types (like pact_id)
+async function cawFetch(method: string, path: string, body?: any): Promise<any> {
+  const url = `${CAW_API_URL}${path}`;
+  const opts: RequestInit = {
+    method,
+    headers: {
+      'X-API-Key': CAW_API_KEY,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const response = await fetch(url, opts);
+  const data = await response.json();
+  if (!response.ok) {
+    const err: any = new Error(`CAW API ${response.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    err.status = response.status;
+    err.cawResponse = data;
+    throw err;
+  }
+  return data;
+}
 
 export interface TransferResult {
   status: string;
@@ -238,13 +250,9 @@ export class CoboCAWService {
       console.log(`[CAW] transferTokens: amount=${amount}, to=${dstAddr}, pact_id=${pactId || 'none'}`);
       console.log('[CAW] Transfer request body:', JSON.stringify(transferBody, null, 2));
 
-      // Use direct axios call to ensure pact_id is sent (SDK may strip unknown fields)
-      const response = await cawAxios.post(
-        `/wallets/${this.walletUuid}/transactions/transfer`,
-        transferBody
-      );
+      // Use direct fetch to ensure pact_id is sent (SDK may strip unknown fields)
+      const data = await cawFetch('POST', `/wallets/${this.walletUuid}/transactions/transfer`, transferBody);
 
-      const data = response.data as any;
       console.log('[CAW] Transfer response:', JSON.stringify(data, null, 2)?.slice(0, 800));
 
       const result = data?.result ?? data;
@@ -281,11 +289,8 @@ export class CoboCAWService {
       };
       if (pactId) body.pact_id = pactId;
 
-      const response = await cawAxios.post(
-        `/wallets/${this.walletUuid}/transactions/contract-call`,
-        body
-      );
-      return response.data;
+      const data = await cawFetch('POST', `/wallets/${this.walletUuid}/transactions/contract-call`, body);
+      return data;
     } catch (error: any) {
       parseCawError(error);
       return null;
@@ -347,10 +352,9 @@ export class CoboCAWService {
       };
       console.log('[CAW] Submitting pact:', JSON.stringify(requestBody, null, 2).slice(0, 800));
 
-      // Use direct axios to see the full raw response
-      const response = await cawAxios.post('/pacts', requestBody);
+      // Use direct fetch to see the full raw response
+      const data = await cawFetch('POST', '/pacts', requestBody);
 
-      const data = response.data as any;
       const result = data?.result ?? data?.data ?? data;
       console.log('[CAW] Pact FULL response:', JSON.stringify(data, null, 2)?.slice(0, 1500));
 
@@ -391,14 +395,8 @@ export class CoboCAWService {
 
   async listPacts(): Promise<PactInfo[]> {
     try {
-      // Use direct axios for more control
-      const response = await cawAxios.get('/pacts', {
-        params: {
-          wallet_id: this.walletUuid,
-          page_size: 100,
-        },
-      });
-      const data = response.data as any;
+      // Use direct fetch for more control over query params and response
+      const data = await cawFetch('GET', `/pacts?wallet_id=${this.walletUuid}&page_size=100`);
       console.log('[CAW] listPacts raw response:', JSON.stringify(data, null, 2)?.slice(0, 1500));
 
       let list: any[] = [];
@@ -425,8 +423,8 @@ export class CoboCAWService {
 
   async revokePact(pactId: string): Promise<any> {
     try {
-      const response = await cawAxios.post(`/pacts/${pactId}/revoke`);
-      return response.data;
+      const data = await cawFetch('POST', `/pacts/${pactId}/revoke`);
+      return data;
     } catch (error: any) {
       parseCawError(error);
       return null;
