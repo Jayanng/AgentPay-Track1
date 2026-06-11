@@ -152,25 +152,141 @@ router.get('/debug', async (_req, res) => {
   }
 });
 
-// POST /api/caw/reinit-pacts — Force re-submit all default pacts
+// POST /api/caw/reinit-pacts — Force re-submit all default pacts (verbose)
 router.post('/reinit-pacts', async (_req, res) => {
+  const log: string[] = [];
   try {
-    // Clear the guard so pacts can be re-submitted
+    // Clear the guard
     (globalThis as any).__agentpayPactsInitialized = false;
+    log.push('Cleared globalThis guard');
 
-    // Dynamically import and call the initializer
-    const { initializeDefaultPacts } = await import('../services/pact-defaults.js');
-    await initializeDefaultPacts();
+    // Step 1: List existing pacts with RAW response
+    log.push('Step 1: Listing existing pacts...');
+    let existingPacts: any[] = [];
+    try {
+      const response = await (await import('../services/cobo-caw.js')).cawService.listPacts();
+      existingPacts = response;
+      log.push(`Found ${existingPacts.length} existing pacts: ${JSON.stringify(existingPacts)}`);
+    } catch (e: any) {
+      log.push(`listPacts error: ${e.message}`);
+    }
 
-    // Check what we have now
-    const pacts = await cawService.listPacts();
+    // Step 2: Submit pacts directly (bypass the initializer)
+    const { cawService } = await import('../services/cobo-caw.js');
+    const CAW_ETH_ADDRESS = process.env.CAW_ETH_ADDRESS || '0xa22c5d0840aae11a5483ca6dff12206905320496';
+    
+    const results: any[] = [];
+
+    // Buyer Pact
+    log.push('Step 2a: Submitting Buyer Pact...');
+    try {
+      const buyerPact = await cawService.submitPact(
+        'Buyer Policy - max 0.005 ETH per transaction, 20 tx/day',
+        {
+          execution_plan: `# Buyer Spending Policy\n\nTransfer up to 0.005 ETH per transaction on SETH (Sepolia).\nMaximum 20 transactions per 24-hour rolling window.\nPact expires after 7 days.`,
+          policies: [{
+            name: 'buyer-spend-limit',
+            type: 'transfer',
+            rules: {
+              effect: 'allow',
+              when: {
+                chain_in: ['SETH'],
+                token_in: [{ chain_id: 'SETH', token_id: 'SETH' }],
+              },
+              deny_if: {
+                amount_gt: '0.005',
+                usage_limits: { rolling_24h: { tx_count_gt: 20 } },
+              },
+            },
+          }],
+          completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
+        }
+      );
+      log.push(`Buyer Pact result: ${JSON.stringify(buyerPact)}`);
+      results.push({ name: 'Buyer', ...buyerPact });
+    } catch (e: any) {
+      log.push(`Buyer Pact error: ${e.message}, cawResponse: ${JSON.stringify(e?.cawResponse)?.slice(0, 500)}`);
+      results.push({ name: 'Buyer', error: e.message, cawResponse: e?.cawResponse });
+    }
+
+    // Seller Pact
+    log.push('Step 2b: Submitting Seller Pact...');
+    try {
+      const sellerPact = await cawService.submitPact(
+        'Seller Policy - receive payments only to agent wallet',
+        {
+          execution_plan: `# Seller Receive-Only Policy\n\nOnly allows receiving SETH transfers to the agent wallet address.\nNo outbound transfers allowed under this pact.\nPact expires after 7 days.`,
+          policies: [{
+            name: 'seller-receive-only',
+            type: 'transfer',
+            rules: {
+              effect: 'allow',
+              when: {
+                chain_in: ['SETH'],
+                token_in: [{ chain_id: 'SETH', token_id: 'SETH' }],
+                destination_address_in: [{ chain_id: 'SETH', address: CAW_ETH_ADDRESS }],
+              },
+            },
+          }],
+          completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
+        }
+      );
+      log.push(`Seller Pact result: ${JSON.stringify(sellerPact)}`);
+      results.push({ name: 'Seller', ...sellerPact });
+    } catch (e: any) {
+      log.push(`Seller Pact error: ${e.message}, cawResponse: ${JSON.stringify(e?.cawResponse)?.slice(0, 500)}`);
+      results.push({ name: 'Seller', error: e.message, cawResponse: e?.cawResponse });
+    }
+
+    // Settler Pact
+    log.push('Step 2c: Submitting Settler Pact...');
+    try {
+      const settlerPact = await cawService.submitPact(
+        'Settler Policy - escrow operations, requires approval above 0.01 ETH',
+        {
+          execution_plan: `# Settler Escrow Policy\n\nExecute escrow contract calls on SETH.\nTransfers above 0.01 ETH require owner approval.\nRolling 24h: max 10 transactions.\nPact expires after 7 days.`,
+          policies: [{
+            name: 'settler-escrow-limits',
+            type: 'transfer',
+            rules: {
+              effect: 'allow',
+              when: {
+                chain_in: ['SETH'],
+                token_in: [{ chain_id: 'SETH', token_id: 'SETH' }],
+              },
+              review_if: { amount_gt: '0.01' },
+              deny_if: {
+                usage_limits: { rolling_24h: { tx_count_gt: 10 } },
+              },
+            },
+          }],
+          completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
+        }
+      );
+      log.push(`Settler Pact result: ${JSON.stringify(settlerPact)}`);
+      results.push({ name: 'Settler', ...settlerPact });
+    } catch (e: any) {
+      log.push(`Settler Pact error: ${e.message}, cawResponse: ${JSON.stringify(e?.cawResponse)?.slice(0, 500)}`);
+      results.push({ name: 'Settler', error: e.message, cawResponse: e?.cawResponse });
+    }
+
+    // Step 3: List pacts again
+    log.push('Step 3: Listing pacts after submission...');
+    try {
+      const afterPacts = await cawService.listPacts();
+      log.push(`After: ${afterPacts.length} pacts: ${JSON.stringify(afterPacts)}`);
+    } catch (e: any) {
+      log.push(`listPacts after error: ${e.message}`);
+    }
+
     res.json({
       message: 'Pact re-initialization complete',
-      pacts,
-      note: 'If pacts are PENDING_APPROVAL, approve them in the Cobo dashboard/app before transfers will work',
+      log,
+      results,
+      note: 'Check the log for submission details. If pacts show PENDING_APPROVAL, approve them in the Cobo dashboard.',
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message, caw_error: error?.cawResponse });
+    res.status(500).json({ error: error.message, log, caw_error: error?.cawResponse });
   }
 });
 
