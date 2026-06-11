@@ -176,10 +176,16 @@ router.post('/fund-deployer', async (req, res) => {
       return;
     }
 
+    // Log the full error for debugging
+    const errData = error?.cawResponse || error?.response?.data || error?.response?.body || error?.details || {};
+    console.error('[fund-deployer] Error:', error.message, 'Status:', error?.status, 'CAW response:', JSON.stringify(errData).slice(0, 500));
+
     res.status(500).json({
       status: 'ERROR',
       message: 'Failed to fund deployer',
       error: error?.message,
+      caw_error: errData?.error || errData,
+      http_status: error?.status,
     });
   }
 });

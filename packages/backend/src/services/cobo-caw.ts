@@ -77,6 +77,9 @@ export function parseCawError(error: any): never {
   const data = response?.data || response?.body || {};
   const transportCode = error?.code || error?.cause?.code;
 
+  // Log the full CAW API error for debugging
+  console.error('[CAW] parseCawError: status=', response?.status, 'data=', JSON.stringify(data).slice(0, 500));
+
   if (response?.status === 403 && data?.error?.code) {
     throw new CawPolicyError(data as CawError);
   }
@@ -88,6 +91,7 @@ export function parseCawError(error: any): never {
     (parsed as any).reason = data?.error?.reason;
     (parsed as any).details = data?.error?.details || {};
     (parsed as any).suggestion = data?.suggestion;
+    (parsed as any).cawResponse = data;
     throw parsed;
   }
 
@@ -95,6 +99,7 @@ export function parseCawError(error: any): never {
   (passthrough as any).status = response?.status || error?.status || error?.statusCode;
   (passthrough as any).code = transportCode;
   (passthrough as any).cause = error?.cause;
+  (passthrough as any).cawResponse = data;
   throw passthrough;
 }
 
@@ -192,16 +197,22 @@ export class CoboCAWService {
     requestId?: string
   ): Promise<TransferResult> {
     try {
-      const response = await txApi.transferTokens(this.walletUuid, {
+      // CAW API expects amount as a decimal string (e.g. "0.003", "1.5"), NOT wei
+      const transferBody: any = {
         dst_addr: dstAddr,
         amount,
         token_id: tokenId,
         chain_id: chainId,
         request_id: requestId || `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        description: 'Payment for resource',
-      });
+        description: 'AgentPay transfer',
+      };
+      console.log(`[CAW] transferTokens: amount=${amount}, to=${dstAddr}, token=${tokenId}, chain=${chainId}`);
+      console.log('[CAW] Transfer request body:', JSON.stringify(transferBody, null, 2));
+
+      const response = await txApi.transferTokens(this.walletUuid, transferBody);
 
       const data = response.data as any;
+      console.log('[CAW] Transfer response:', JSON.stringify(data, null, 2)?.slice(0, 800));
       if (data?.result) {
         return {
           status: data.result.status || 'COMPLETED',
@@ -211,6 +222,8 @@ export class CoboCAWService {
       }
       throw new Error('Unexpected transfer response');
     } catch (error: any) {
+      const errResponse = error?.response?.data || error?.response?.body || {};
+      console.error('[CAW] Transfer error:', error.message, 'API response:', JSON.stringify(errResponse).slice(0, 500));
       parseCawError(error);
       return { status: 'error' }; // unreachable
     }
