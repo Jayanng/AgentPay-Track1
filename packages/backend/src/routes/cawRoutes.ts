@@ -1,22 +1,16 @@
 /**
  * CAW (Cobo Agentic Wallet) Routes
  * Exposes wallet balance, pacts, transactions, and demo endpoints.
+ *
+ * KEY: Every transfer MUST run inside a pact. Pass pact_id with each transfer.
  */
 
 import { Router } from 'express';
 import { cawService } from '../services/cobo-caw.js';
 
 const router: Router = Router();
-const POLICY_DENIAL_CODES = new Set(['TRANSFER_LIMIT_EXCEEDED', 'POLICY_DENIED']);
-const NETWORK_CODES = new Set([
-  'ECONNREFUSED',
-  'ENOTFOUND',
-  'ETIMEDOUT',
-  'ECONNRESET',
-  'EHOSTUNREACH',
-  'EAI_AGAIN',
-  'EACCES',
-]);
+const POLICY_DENIAL_CODES = new Set(['TRANSFER_LIMIT_EXCEEDED', 'POLICY_DENIED', 'INSUFFICIENT_PERMISSION', 'permission_check_failed']);
+const NETWORK_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET', 'EHOSTUNREACH', 'EAI_AGAIN', 'EACCES']);
 
 function getStatusCode(error: any): number | undefined {
   return error?.status || error?.statusCode || error?.response?.status;
@@ -45,9 +39,22 @@ function isNetworkFailure(error: any): boolean {
   );
 }
 
+/** Helper: find an active pact that allows transfers */
+async function findActiveTransferPact(): Promise<string | undefined> {
+  try {
+    const pacts = await cawService.listPacts();
+    const active = pacts.find((p: any) =>
+      (p.status === 'ACTIVE' || p.status === 'active') && p.id
+    );
+    return active?.id;
+  } catch {
+    return undefined;
+  }
+}
+
 // ==================== Wallet ====================
 
-// GET /api/caw/wallet — Full wallet info (address, balance, pacts, recent txs)
+// GET /api/caw/wallet — Full wallet info
 router.get('/wallet', async (_req, res) => {
   try {
     const [balance, pacts, recentTxs] = await Promise.all([
@@ -71,7 +78,7 @@ router.get('/wallet', async (_req, res) => {
   }
 });
 
-// GET /api/caw/health — CAW API connectivity check
+// GET /api/caw/health
 router.get('/health', async (_req, res) => {
   try {
     const balance = await cawService.getBalance();
@@ -83,17 +90,15 @@ router.get('/health', async (_req, res) => {
       balance,
     });
   } catch (error: any) {
-    const code = getErrorCode(error);
     res.status(502).json({
       status: 'disconnected',
       api_url: process.env.CAW_API_URL,
       error: error?.message,
-      code,
     });
   }
 });
 
-// GET /api/caw/balance — Just the balance
+// GET /api/caw/balance
 router.get('/balance', async (_req, res) => {
   try {
     const balance = await cawService.getBalance();
@@ -113,7 +118,7 @@ router.get('/pacts', async (_req, res) => {
   }
 });
 
-// GET /api/caw/transactions — Recent transactions
+// GET /api/caw/transactions
 router.get('/transactions', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 20;
@@ -124,7 +129,7 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
-// GET /api/caw/debug — Full diagnostic info (pacts with raw data, balance, wallet info)
+// GET /api/caw/debug — Full diagnostic
 router.get('/debug', async (_req, res) => {
   try {
     const [balance, walletInfo, pacts, txs] = await Promise.all([
@@ -152,33 +157,21 @@ router.get('/debug', async (_req, res) => {
   }
 });
 
-// POST /api/caw/reinit-pacts — Force re-submit all default pacts (verbose)
+// ==================== Pact Setup ====================
+
+// POST /api/caw/reinit-pacts — Submit pacts and return pact IDs for transfer use
 router.post('/reinit-pacts', async (_req, res) => {
   const log: string[] = [];
   try {
-    // Clear the guard
     (globalThis as any).__agentpayPactsInitialized = false;
     log.push('Cleared globalThis guard');
 
-    // Step 1: List existing pacts with RAW response
-    log.push('Step 1: Listing existing pacts...');
-    let existingPacts: any[] = [];
-    try {
-      const response = await (await import('../services/cobo-caw.js')).cawService.listPacts();
-      existingPacts = response;
-      log.push(`Found ${existingPacts.length} existing pacts: ${JSON.stringify(existingPacts)}`);
-    } catch (e: any) {
-      log.push(`listPacts error: ${e.message}`);
-    }
-
-    // Step 2: Submit pacts directly (bypass the initializer)
-    const { cawService } = await import('../services/cobo-caw.js');
     const CAW_ETH_ADDRESS = process.env.CAW_ETH_ADDRESS || '0xa22c5d0840aae11a5483ca6dff12206905320496';
-    
     const results: any[] = [];
 
-    // Buyer Pact
-    log.push('Step 2a: Submitting Buyer Pact...');
+    // Submit ONE comprehensive Buyer Pact that allows SETH transfers up to 0.005 ETH
+    // This is the main pact we'll use for all transfers (including fund-deployer)
+    log.push('Submitting Buyer Transfer Pact...');
     try {
       const buyerPact = await cawService.submitPact(
         'Buyer Policy - max 0.005 ETH per transaction, 20 tx/day',
@@ -202,20 +195,21 @@ router.post('/reinit-pacts', async (_req, res) => {
           completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
         }
       );
-      log.push(`Buyer Pact result: ${JSON.stringify(buyerPact)}`);
+      log.push(`Buyer Pact: id=${buyerPact.id}, status=${buyerPact.status}, api_key=${buyerPact.api_key || 'none'}`);
+      log.push(`Buyer Pact RAW: ${JSON.stringify(buyerPact.raw || {}).slice(0, 500)}`);
       results.push({ name: 'Buyer', ...buyerPact });
     } catch (e: any) {
-      log.push(`Buyer Pact error: ${e.message}, cawResponse: ${JSON.stringify(e?.cawResponse)?.slice(0, 500)}`);
+      log.push(`Buyer Pact error: ${e.message}`);
       results.push({ name: 'Buyer', error: e.message, cawResponse: e?.cawResponse });
     }
 
-    // Seller Pact
-    log.push('Step 2b: Submitting Seller Pact...');
+    // Seller Pact (receive-only)
+    log.push('Submitting Seller Pact...');
     try {
       const sellerPact = await cawService.submitPact(
         'Seller Policy - receive payments only to agent wallet',
         {
-          execution_plan: `# Seller Receive-Only Policy\n\nOnly allows receiving SETH transfers to the agent wallet address.\nNo outbound transfers allowed under this pact.\nPact expires after 7 days.`,
+          execution_plan: `# Seller Receive-Only Policy\n\nOnly allows receiving SETH transfers to the agent wallet address.\nPact expires after 7 days.`,
           policies: [{
             name: 'seller-receive-only',
             type: 'transfer',
@@ -231,20 +225,20 @@ router.post('/reinit-pacts', async (_req, res) => {
           completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
         }
       );
-      log.push(`Seller Pact result: ${JSON.stringify(sellerPact)}`);
+      log.push(`Seller Pact: id=${sellerPact.id}, status=${sellerPact.status}`);
       results.push({ name: 'Seller', ...sellerPact });
     } catch (e: any) {
-      log.push(`Seller Pact error: ${e.message}, cawResponse: ${JSON.stringify(e?.cawResponse)?.slice(0, 500)}`);
+      log.push(`Seller Pact error: ${e.message}`);
       results.push({ name: 'Seller', error: e.message, cawResponse: e?.cawResponse });
     }
 
-    // Settler Pact
-    log.push('Step 2c: Submitting Settler Pact...');
+    // Settler Pact (escrow with approval >0.01 ETH)
+    log.push('Submitting Settler Pact...');
     try {
       const settlerPact = await cawService.submitPact(
         'Settler Policy - escrow operations, requires approval above 0.01 ETH',
         {
-          execution_plan: `# Settler Escrow Policy\n\nExecute escrow contract calls on SETH.\nTransfers above 0.01 ETH require owner approval.\nRolling 24h: max 10 transactions.\nPact expires after 7 days.`,
+          execution_plan: `# Settler Escrow Policy\n\nExecute escrow contract calls on SETH.\nTransfers above 0.01 ETH require owner approval.\nPact expires after 7 days.`,
           policies: [{
             name: 'settler-escrow-limits',
             type: 'transfer',
@@ -263,38 +257,46 @@ router.post('/reinit-pacts', async (_req, res) => {
           completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
         }
       );
-      log.push(`Settler Pact result: ${JSON.stringify(settlerPact)}`);
+      log.push(`Settler Pact: id=${settlerPact.id}, status=${settlerPact.status}`);
       results.push({ name: 'Settler', ...settlerPact });
     } catch (e: any) {
-      log.push(`Settler Pact error: ${e.message}, cawResponse: ${JSON.stringify(e?.cawResponse)?.slice(0, 500)}`);
+      log.push(`Settler Pact error: ${e.message}`);
       results.push({ name: 'Settler', error: e.message, cawResponse: e?.cawResponse });
     }
 
-    // Step 3: List pacts again
-    log.push('Step 3: Listing pacts after submission...');
+    // List pacts after submission
+    log.push('Listing pacts after submission...');
     try {
       const afterPacts = await cawService.listPacts();
-      log.push(`After: ${afterPacts.length} pacts: ${JSON.stringify(afterPacts)}`);
+      log.push(`After: ${afterPacts.length} pacts`);
     } catch (e: any) {
       log.push(`listPacts after error: ${e.message}`);
     }
+
+    // Find the buyer pact ID for transfer use
+    const buyerPactResult = results.find(r => r.name === 'Buyer' && r.id && r.status === 'active');
 
     res.json({
       message: 'Pact re-initialization complete',
       log,
       results,
-      note: 'Check the log for submission details. If pacts show PENDING_APPROVAL, approve them in the Cobo dashboard.',
+      buyerPactId: buyerPactResult?.id || null,
+      note: buyerPactResult?.id
+        ? `Use buyerPactId="${buyerPactResult.id}" in fund-deployer requests`
+        : 'No active buyer pact found — check Cobo dashboard for approval',
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message, log, caw_error: error?.cawResponse });
   }
 });
 
+// ==================== Transfers ====================
+
 // POST /api/caw/fund-deployer — Send SETH from CAW wallet to deployer address
-// Used to fund the escrow contract deployer wallet
+// CRITICAL: Must pass pact_id — every transfer runs inside a pact
 router.post('/fund-deployer', async (req, res) => {
   try {
-    const { address, amount } = req.body;
+    const { address, amount, pact_id } = req.body;
     if (!address || !amount) {
       res.status(400).json({ error: 'address and amount are required' });
       return;
@@ -309,12 +311,20 @@ router.post('/fund-deployer', async (req, res) => {
       return;
     }
 
+    // Find pact_id if not provided — every transfer MUST run inside a pact
+    let resolvedPactId = pact_id;
+    if (!resolvedPactId) {
+      resolvedPactId = await findActiveTransferPact();
+      console.log(`[fund-deployer] Auto-resolved pact_id: ${resolvedPactId || 'NONE FOUND'}`);
+    }
+
     const result = await cawService.transferTokens(
       address,
       String(numAmount),
       'SETH',
       'SETH',
-      `fund-deployer-${Date.now()}`
+      `fund-deployer-${Date.now()}`,
+      resolvedPactId
     );
 
     res.json({
@@ -322,7 +332,9 @@ router.post('/fund-deployer', async (req, res) => {
       message: `Sent ${amount} SETH to deployer address`,
       destination: address,
       amount: `${amount} SETH`,
+      pact_id: resolvedPactId,
       transaction_hash: result.transaction_hash,
+      transaction_id: result.id,
       etherscan: result.transaction_hash
         ? `https://sepolia.etherscan.io/tx/${result.transaction_hash}`
         : undefined,
@@ -332,19 +344,20 @@ router.post('/fund-deployer', async (req, res) => {
     const errorCode = getErrorCode(error);
 
     if (statusCode === 403 || (errorCode ? POLICY_DENIAL_CODES.has(errorCode) : false)) {
-      const errorDetails = error?.response?.data?.error || error?.body?.error || error?.details || {};
+      const errorDetails = error?.cawResponse?.error || error?.details || {};
       res.json({
         status: 'BLOCKED',
-        reason: errorDetails?.reason || 'Pact policy blocked this transfer',
-        message: 'Transfer exceeds Buyer Policy spend limit (max 0.005 ETH per tx)',
+        reason: errorDetails?.reason || error?.reason || 'Pact policy blocked this transfer',
+        error_code: errorCode || error?.code,
+        message: `Transfer blocked (code: ${errorCode || 'unknown'}). Ensure an active buyer pact exists and pact_id is passed.`,
         error: error?.message,
+        suggestion: 'Run POST /api/caw/reinit-pacts first, then pass the buyerPactId in the request body as pact_id',
       });
       return;
     }
 
-    // Log the full error for debugging
-    const errData = error?.cawResponse || error?.response?.data || error?.response?.body || error?.details || {};
-    console.error('[fund-deployer] Error:', error.message, 'Status:', error?.status, 'CAW response:', JSON.stringify(errData).slice(0, 500));
+    const errData = error?.cawResponse || error?.response?.data || {};
+    console.error('[fund-deployer] Error:', error.message, 'CAW response:', JSON.stringify(errData).slice(0, 500));
 
     res.status(500).json({
       status: 'ERROR',
@@ -358,7 +371,7 @@ router.post('/fund-deployer', async (req, res) => {
 
 // ==================== Pact Management ====================
 
-// POST /api/pacts/submit — Submit a new pact
+// POST /api/caw/pacts/submit — Submit a new pact
 router.post('/submit', async (req, res) => {
   try {
     const { intent, spec } = req.body;
@@ -373,27 +386,7 @@ router.post('/submit', async (req, res) => {
   }
 });
 
-// GET /api/pacts/:id — Get pact status
-router.get('/:id', async (req, res) => {
-  try {
-    const pact = await cawService.getPact(req.params.id);
-    res.json(pact);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch pact' });
-  }
-});
-
-// GET /api/pacts — List all pacts (alias)
-router.get('/', async (_req, res) => {
-  try {
-    const pacts = await cawService.listPacts();
-    res.json({ pacts });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch pacts' });
-  }
-});
-
-// POST /api/pacts/:id/revoke — Revoke a pact
+// POST /api/caw/pacts/:id/revoke
 router.post('/:id/revoke', async (req, res) => {
   try {
     const result = await cawService.revokePact(req.params.id);
@@ -403,17 +396,29 @@ router.post('/:id/revoke', async (req, res) => {
   }
 });
 
+// GET /api/caw/pacts/:id — Get pact status
+router.get('/:id', async (req, res) => {
+  try {
+    const pact = await cawService.getPact(req.params.id);
+    res.json(pact);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch pact' });
+  }
+});
+
 // ==================== Demo Endpoints ====================
 
-// POST /api/demo/blocked-transaction — Try to transfer 0.01 ETH (exceeds 0.005 limit)
-router.post('/blocked-transaction', async (_req, res) => {
+// POST /api/caw/demo/blocked-transaction — Try to transfer 0.01 ETH (exceeds 0.005 limit)
+router.post('/demo/blocked-transaction', async (_req, res) => {
   try {
+    const pactId = await findActiveTransferPact();
     const result = await cawService.transferTokens(
       '0x0000000000000000000000000000000000000001',
       '0.01',
       'SETH',
       'SETH',
-      `demo-blocked-${Date.now()}`
+      `demo-blocked-${Date.now()}`,
+      pactId
     );
     res.json({
       status: 'ALLOWED',
@@ -425,33 +430,13 @@ router.post('/blocked-transaction', async (_req, res) => {
     const errorCode = getErrorCode(error);
 
     if (statusCode === 403 || (errorCode ? POLICY_DENIAL_CODES.has(errorCode) : false)) {
-      const errorDetails = error?.response?.data?.error || error?.body?.error || error?.details || {};
       res.json({
         status: 'BLOCKED',
-        reason: errorDetails?.reason || 'Transaction exceeds Buyer Policy spend limit',
+        reason: 'Transaction exceeds Buyer Policy spend limit',
         policy: 'Buyer Policy - max 0.005 ETH per transaction',
         attempted_amount: '0.01 ETH',
         limit: '0.005 ETH',
         error_code: errorCode,
-        error_details: errorDetails,
-      });
-      return;
-    }
-
-    if (statusCode === 401 || errorCode === 'UNAUTHORIZED') {
-      res.status(502).json({
-        status: 'ERROR',
-        message: 'CAW API authentication failed - check CAW_API_KEY',
-        error: error?.message,
-      });
-      return;
-    }
-
-    if (isNetworkFailure(error)) {
-      res.status(502).json({
-        status: 'ERROR',
-        message: 'Cannot reach Cobo Agentic Wallet API - check network connectivity',
-        error: error?.message,
       });
       return;
     }
@@ -460,46 +445,38 @@ router.post('/blocked-transaction', async (_req, res) => {
       status: 'ERROR',
       message: 'Unexpected error during transaction',
       error: error?.message,
-      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
     });
   }
 });
 
-// POST /api/demo/allowed-transaction — Try to transfer 0.001 ETH (within limits)
-router.post('/allowed-transaction', async (_req, res) => {
+// POST /api/caw/demo/allowed-transaction — Try to transfer 0.001 ETH (within limits)
+router.post('/demo/allowed-transaction', async (_req, res) => {
   try {
+    const pactId = await findActiveTransferPact();
     const result = await cawService.transferTokens(
       '0x0000000000000000000000000000000000000001',
       '0.001',
       'SETH',
       'SETH',
-      `demo-allowed-${Date.now()}`
+      `demo-allowed-${Date.now()}`,
+      pactId
     );
     res.json({
       status: 'APPROVED',
       message: 'Transaction passed Buyer Policy checks',
-      transaction_hash: result.transaction_hash || (result as any).id,
+      transaction_hash: result.transaction_hash || result.id,
       amount: '0.001 ETH',
+      pact_id: pactId,
       etherscan: result.transaction_hash
         ? `https://sepolia.etherscan.io/tx/${result.transaction_hash}`
         : undefined,
     });
   } catch (error: any) {
     const statusCode = getStatusCode(error);
-    const errorCode = getErrorCode(error);
     if (statusCode === 403) {
       res.json({
         status: 'BLOCKED',
         reason: 'Transaction was blocked by policy',
-        error: error?.message,
-      });
-      return;
-    }
-
-    if (statusCode === 401 || errorCode === 'UNAUTHORIZED') {
-      res.status(502).json({
-        status: 'ERROR',
-        message: 'CAW API authentication failed - check CAW_API_KEY',
         error: error?.message,
       });
       return;
@@ -513,10 +490,8 @@ router.post('/allowed-transaction', async (_req, res) => {
   }
 });
 
-// POST /api/demo/onchain-flow — Full on-chain escrow demo
-// 1. Tests Pact policy with a small transfer
-// 2. Returns TX hash + Etherscan verification links
-router.post('/onchain-flow', async (_req, res) => {
+// POST /api/caw/demo/onchain-flow — Full on-chain escrow demo
+router.post('/demo/onchain-flow', async (_req, res) => {
   const flowResult: any = {
     steps: [],
     wallet: {
@@ -536,21 +511,24 @@ router.post('/onchain-flow', async (_req, res) => {
       balance: `${balance} SETH`,
     });
 
-    // Step 2: Attempt a micro-transfer (0.0001 ETH) to prove on-chain capability
-    if (Number(balance) > 0.001) {
+    // Step 2: Micro-transfer with pact
+    const pactId = await findActiveTransferPact();
+    if (Number(balance) > 0.001 && pactId) {
       try {
         const transferResult = await cawService.transferTokens(
           '0x0000000000000000000000000000000000000001',
           '0.0001',
           'SETH',
           'SETH',
-          `onchain-demo-${Date.now()}`
+          `onchain-demo-${Date.now()}`,
+          pactId
         );
         flowResult.steps.push({
           step: 2,
           name: 'Micro Transfer (Pact Policy Check)',
           status: 'APPROVED',
           amount: '0.0001 SETH',
+          pact_id: pactId,
           transaction_hash: transferResult.transaction_hash,
           etherscan: transferResult.transaction_hash
             ? `https://sepolia.etherscan.io/tx/${transferResult.transaction_hash}`
@@ -564,8 +542,10 @@ router.post('/onchain-flow', async (_req, res) => {
             step: 2,
             name: 'Micro Transfer (Pact Policy Check)',
             status: 'BLOCKED_BY_POLICY',
+            pact_id: pactId,
             message: 'Pact policy blocked this transaction',
             error: txError?.message,
+            error_code: errorCode,
           });
         } else {
           flowResult.steps.push({
@@ -580,8 +560,8 @@ router.post('/onchain-flow', async (_req, res) => {
       flowResult.steps.push({
         step: 2,
         name: 'Micro Transfer (Pact Policy Check)',
-        status: 'SKIPPED',
-        message: 'Insufficient balance for test transfer. Fund wallet with SETH first.',
+        status: Number(balance) <= 0.001 ? 'INSUFFICIENT_BALANCE' : 'NO_ACTIVE_PACT',
+        message: pactId ? 'Insufficient balance for test transfer.' : 'No active pact found. Run POST /api/caw/reinit-pacts first.',
       });
     }
 

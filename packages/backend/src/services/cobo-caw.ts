@@ -1,14 +1,22 @@
 /**
  * Cobo Agentic Wallet (CAW) Service
  * Wraps the @cobo/agentic-wallet SDK for wallet operations, transactions, and pacts.
+ *
+ * KEY INSIGHT from Cobo docs:
+ * - Every transfer MUST run inside a pact (pass pact_id in transfer request)
+ * - CAW API expects amounts as decimal strings (e.g. "0.003"), NOT wei
+ * - src_addr is required even though SDK types say optional
+ * - Pact submission returns an api_key scoped to the pact's permissions
  */
 
 import { Configuration, PactsApi, TransactionsApi, WalletsApi } from '@cobo/agentic-wallet';
 import { BalanceApi, TransactionRecordsApi } from '@cobo/agentic-wallet';
+import axios from 'axios';
 
 const CAW_API_KEY = process.env.CAW_API_KEY!;
 const CAW_API_URL = process.env.CAW_API_URL || 'https://api.agenticwallet.cobo.com';
 const CAW_WALLET_UUID = process.env.CAW_WALLET_UUID!;
+const CAW_ETH_ADDRESS = process.env.CAW_ETH_ADDRESS || '';
 
 if (!CAW_API_KEY) {
   console.warn('[CAW] CAW_API_KEY not set — CAW service will be unavailable');
@@ -28,10 +36,21 @@ const walletsApi: any = new WalletsApi(config);
 const balanceApi: any = new BalanceApi(config);
 const txRecordsApi: any = new TransactionRecordsApi(config);
 
+// Direct axios instance for API calls that need fields not in SDK types (like pact_id)
+const cawAxios = axios.create({
+  baseURL: CAW_API_URL,
+  headers: {
+    'X-API-Key': CAW_API_KEY,
+    'Content-Type': 'application/json',
+  },
+});
+
 export interface TransferResult {
   status: string;
   transaction_hash?: string;
   pending_operation_id?: string;
+  id?: string;
+  raw?: any;
 }
 
 export interface PactInfo {
@@ -40,6 +59,7 @@ export interface PactInfo {
   intent?: string;
   api_key?: string;
   name?: string;
+  raw?: any;
 }
 
 export interface CawError {
@@ -77,7 +97,6 @@ export function parseCawError(error: any): never {
   const data = response?.data || response?.body || {};
   const transportCode = error?.code || error?.cause?.code;
 
-  // Log the full CAW API error for debugging
   console.error('[CAW] parseCawError: status=', response?.status, 'data=', JSON.stringify(data).slice(0, 500));
 
   if (response?.status === 403 && data?.error?.code) {
@@ -126,10 +145,8 @@ export class CoboCAWService {
       const data = response.data as any;
       console.log('[CAW] Balance API raw response:', JSON.stringify(data, null, 2)?.slice(0, 800));
 
-      // Try multiple response formats that the CAW API might return
-      // CAW API returns: { success: true, result: [...] } where result IS the array
       let rows: any[] = [];
-      if (Array.isArray(data?.result)) rows = data.result;           // ✅ CAW actual format
+      if (Array.isArray(data?.result)) rows = data.result;
       else if (Array.isArray(data?.result?.items)) rows = data.result.items;
       else if (Array.isArray(data?.result?.list)) rows = data.result.list;
       else if (Array.isArray(data?.items)) rows = data.items;
@@ -138,7 +155,6 @@ export class CoboCAWService {
       else if (Array.isArray(data?.data?.list)) rows = data.data.list;
       else if (Array.isArray(data)) rows = data;
 
-      // Search for ETH balance with flexible matching
       const ethBalance = rows.find((b: any) =>
         b?.token_id === 'SETH' ||
         b?.chain_id === 'SETH' ||
@@ -151,8 +167,6 @@ export class CoboCAWService {
       if (ethBalance) {
         console.log('[CAW] Found balance entry:', JSON.stringify(ethBalance));
         const amount = ethBalance?.amount ?? ethBalance?.total ?? ethBalance?.available ?? ethBalance?.balance ?? '0';
-        // CAW API returns amounts as decimal strings (e.g. "0.008973389279904")
-        // Only convert to ETH if it's clearly wei (very large integer, no decimal point)
         if (typeof amount === 'string' && !amount.includes('.') && amount.length > 15) {
           try {
             const weiVal = BigInt(amount);
@@ -165,7 +179,6 @@ export class CoboCAWService {
         return String(amount);
       }
 
-      // If no rows found but data has a direct balance field
       if (data?.result?.amount !== undefined) return String(data.result.amount);
       if (data?.result?.total !== undefined) return String(data.result.total);
       if (data?.amount !== undefined) return String(data.amount);
@@ -176,64 +189,77 @@ export class CoboCAWService {
     } catch (error: any) {
       console.error('[CAW] Balance fetch error:', error.message);
       parseCawError(error);
-      return '0'; // unreachable but satisfies TypeScript
+      return '0';
     }
   }
 
   async getWalletInfo(): Promise<any> {
     try {
       const response = await walletsApi.getWallet(this.walletUuid);
-      console.log('[CAW] Wallet info:', JSON.stringify(response.data, null, 2)?.slice(0, 500));
       return response.data;
     } catch (error: any) {
       console.error('[CAW] Wallet info error:', error.message);
       parseCawError(error);
-      return null; // unreachable
+      return null;
     }
   }
 
   // ==================== Transactions ====================
 
+  /**
+   * Transfer tokens using the CAW API.
+   * CRITICAL: Per Cobo docs, every transfer must run inside a pact.
+   * The SDK's TransferCreate type doesn't include pact_id, but the API accepts it.
+   * We use direct axios calls to pass pact_id when available.
+   */
   async transferTokens(
     dstAddr: string,
     amount: string,
     tokenId = 'SETH',
     chainId = 'SETH',
-    requestId?: string
+    requestId?: string,
+    pactId?: string
   ): Promise<TransferResult> {
     try {
-      // CAW API expects amount as a decimal string (e.g. "0.003", "1.5"), NOT wei
-      // CAW API requires src_addr even though SDK docs say it's optional
-      const srcAddr = process.env.CAW_ETH_ADDRESS || '';
       const transferBody: any = {
-        src_addr: srcAddr,
+        src_addr: CAW_ETH_ADDRESS,
         dst_addr: dstAddr,
         amount,
         token_id: tokenId,
         chain_id: chainId,
         request_id: requestId || `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        description: 'AgentPay transfer',
       };
-      console.log(`[CAW] transferTokens: amount=${amount}, to=${dstAddr}, token=${tokenId}, chain=${chainId}`);
+
+      // CRITICAL: Add pact_id if provided — transfers MUST run inside a pact
+      if (pactId) {
+        transferBody.pact_id = pactId;
+      }
+
+      console.log(`[CAW] transferTokens: amount=${amount}, to=${dstAddr}, pact_id=${pactId || 'none'}`);
       console.log('[CAW] Transfer request body:', JSON.stringify(transferBody, null, 2));
 
-      const response = await txApi.transferTokens(this.walletUuid, transferBody);
+      // Use direct axios call to ensure pact_id is sent (SDK may strip unknown fields)
+      const response = await cawAxios.post(
+        `/wallets/${this.walletUuid}/transactions/transfer`,
+        transferBody
+      );
 
       const data = response.data as any;
       console.log('[CAW] Transfer response:', JSON.stringify(data, null, 2)?.slice(0, 800));
-      if (data?.result) {
-        return {
-          status: data.result.status || 'COMPLETED',
-          transaction_hash: data.result.transaction_hash,
-          pending_operation_id: data.result.pending_operation_id,
-        };
-      }
-      throw new Error('Unexpected transfer response');
+
+      const result = data?.result ?? data;
+      return {
+        status: result.status_display || result.status || 'COMPLETED',
+        transaction_hash: result.transaction_hash,
+        pending_operation_id: result.pending_operation_id,
+        id: result.id,
+        raw: data,
+      };
     } catch (error: any) {
       const errResponse = error?.response?.data || error?.response?.body || {};
       console.error('[CAW] Transfer error:', error.message, 'API response:', JSON.stringify(errResponse).slice(0, 500));
       parseCawError(error);
-      return { status: 'error' }; // unreachable
+      return { status: 'error' };
     }
   }
 
@@ -242,20 +268,27 @@ export class CoboCAWService {
     calldata: string,
     value = '0',
     chainId = 'SETH',
-    requestId?: string
+    requestId?: string,
+    pactId?: string
   ): Promise<any> {
     try {
-      const response = await txApi.contractCall(this.walletUuid, {
+      const body: any = {
         chain_id: chainId,
         contract_addr: contractAddr,
         calldata,
         value,
         request_id: requestId || `contract-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      });
+      };
+      if (pactId) body.pact_id = pactId;
+
+      const response = await cawAxios.post(
+        `/wallets/${this.walletUuid}/transactions/contract-call`,
+        body
+      );
       return response.data;
     } catch (error: any) {
       parseCawError(error);
-      return null; // unreachable
+      return null;
     }
   }
 
@@ -265,7 +298,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
-      return null; // unreachable
+      return null;
     }
   }
 
@@ -279,10 +312,12 @@ export class CoboCAWService {
         limit
       );
       const data = response.data as any;
+      // Handle same response format as balance (result is direct array)
+      if (Array.isArray(data?.result)) return data.result;
       return data?.result?.items ?? data?.result?.list ?? data?.items ?? data?.list ?? [];
     } catch (error: any) {
       parseCawError(error);
-      return []; // unreachable
+      return [];
     }
   }
 
@@ -297,7 +332,7 @@ export class CoboCAWService {
       return response.data;
     } catch (error: any) {
       parseCawError(error);
-      return null; // unreachable
+      return null;
     }
   }
 
@@ -305,28 +340,33 @@ export class CoboCAWService {
 
   async submitPact(intent: string, spec: any): Promise<PactInfo> {
     try {
-      const requestBody = {
+      const requestBody: any = {
         wallet_id: this.walletUuid,
         intent,
         spec,
       };
-      console.log('[CAW] Submitting pact:', JSON.stringify(requestBody, null, 2).slice(0, 500));
-      const response = await pactsApi.submitPact(requestBody);
+      console.log('[CAW] Submitting pact:', JSON.stringify(requestBody, null, 2).slice(0, 800));
+
+      // Use direct axios to see the full raw response
+      const response = await cawAxios.post('/pacts', requestBody);
+
       const data = response.data as any;
       const result = data?.result ?? data?.data ?? data;
-      console.log('[CAW] Pact response:', JSON.stringify(data, null, 2).slice(0, 500));
+      console.log('[CAW] Pact FULL response:', JSON.stringify(data, null, 2)?.slice(0, 1500));
+
       return {
         id: result.id || result.pact_id,
         status: result.status,
         intent,
         api_key: result.api_key,
+        name: result.name,
+        raw: data,
       };
     } catch (error: any) {
-      // Log the full error for debugging
       const errData = error?.response?.data || error?.response?.body || {};
       console.error('[CAW] Pact submission error:', error.message, JSON.stringify(errData).slice(0, 500));
       parseCawError(error);
-      return { id: '', status: 'error' }; // unreachable
+      return { id: '', status: 'error' };
     }
   }
 
@@ -341,20 +381,26 @@ export class CoboCAWService {
         intent: result.intent,
         api_key: result.api_key,
         name: result.name,
+        raw: data,
       };
     } catch (error: any) {
       parseCawError(error);
-      return { id: '', status: 'error' }; // unreachable
+      return { id: '', status: 'error' };
     }
   }
 
   async listPacts(): Promise<PactInfo[]> {
     try {
-      const response = await pactsApi.listPacts(undefined, this.walletUuid, undefined, undefined, undefined, 100);
+      // Use direct axios for more control
+      const response = await cawAxios.get('/pacts', {
+        params: {
+          wallet_id: this.walletUuid,
+          page_size: 100,
+        },
+      });
       const data = response.data as any;
-      console.log('[CAW] listPacts raw response:', JSON.stringify(data, null, 2)?.slice(0, 1200));
+      console.log('[CAW] listPacts raw response:', JSON.stringify(data, null, 2)?.slice(0, 1500));
 
-      // CAW API returns { success: true, result: [...] } where result IS the array (same as balance)
       let list: any[] = [];
       if (Array.isArray(data?.result)) list = data.result;
       else if (Array.isArray(data?.result?.items)) list = data.result.items;
@@ -371,18 +417,19 @@ export class CoboCAWService {
         name: p.name,
       }));
     } catch (error: any) {
+      console.error('[CAW] listPacts error:', error.message);
       parseCawError(error);
-      return []; // unreachable
+      return [];
     }
   }
 
   async revokePact(pactId: string): Promise<any> {
     try {
-      const response = await pactsApi.revokePact(pactId);
+      const response = await cawAxios.post(`/pacts/${pactId}/revoke`);
       return response.data;
     } catch (error: any) {
       parseCawError(error);
-      return null; // unreachable
+      return null;
     }
   }
 
@@ -409,6 +456,31 @@ export class CoboCAWService {
     }
 
     throw new Error(`Pact ${pactId} did not activate within ${timeoutMs}ms`);
+  }
+
+  /**
+   * Find an active pact that covers transfers for the given chain/token.
+   * Returns the pact ID or undefined.
+   */
+  async findTransferPact(chainId = 'SETH', tokenId = 'SETH'): Promise<string | undefined> {
+    try {
+      const pacts = await this.listPacts();
+      for (const pact of pacts) {
+        if (pact.status === 'ACTIVE' || pact.status === 'active') {
+          // Check if this pact's raw data includes a transfer policy for the chain
+          const raw = (pact as any).raw;
+          const policies = raw?.result?.spec?.policies ?? raw?.spec?.policies ?? [];
+          const hasTransferPolicy = policies.some((p: any) =>
+            p.type === 'transfer' &&
+            p.rules?.when?.chain_in?.includes(chainId)
+          );
+          if (hasTransferPolicy) return pact.id;
+        }
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
   }
 }
 
