@@ -1,5 +1,5 @@
 /**
- * Wallet setup and utilities for SuperPage x402.
+ * Wallet setup and utilities for AgentPay x402.
  */
 
 import {
@@ -29,7 +29,7 @@ import { makePayment } from "./payment.js";
 
 // Simple logging to stderr (stdout is reserved for MCP protocol)
 export function log(message) {
-  console.error(`[superpage-x402] ${message}`);
+  console.error(`[AgentPay-x402] ${message}`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -54,8 +54,6 @@ export function getExplorerUrl(txHash) {
     'cronos-testnet': `https://explorer.cronos.org/testnet/tx/${txHash}`,
     'cronos': `https://explorer.cronos.org/tx/${txHash}`,
     'bite-v2-sandbox': `https://base-sepolia-testnet.explorer.skalenodes.com/tx/${txHash}`,
-    'flow': `https://evm.flowscan.io/tx/${txHash}`,
-    'flow-testnet': `https://evm-testnet.flowscan.io/tx/${txHash}`,
   };
   return explorers[NETWORK] || `https://base-sepolia-testnet.explorer.skalenodes.com/tx/${txHash}`;
 }
@@ -114,7 +112,6 @@ export async function getWalletBalance() {
     const nativeCurrency = NETWORK.includes('mantle') ? 'MNT'
       : NETWORK.includes('bite') ? 'sFUEL'
       : NETWORK.includes('cronos') ? (NETWORK.includes('testnet') ? 'TCRO' : 'CRO')
-      : NETWORK.includes('flow') ? 'FLOW'
       : 'ETH';
 
     // Get native token balance (ETH/MNT)

@@ -13,17 +13,10 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    flowTestnet: {
-      type: "http",
-      url: "https://testnet.evm.nodes.onflow.org",
+    sepolia: {
+      url: process.env.RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
       accounts: process.env.DEPLOY_PRIVATE_KEY ? [process.env.DEPLOY_PRIVATE_KEY] : [],
-      chainId: 545,
-    },
-    flowMainnet: {
-      type: "http",
-      url: "https://mainnet.evm.nodes.onflow.org",
-      accounts: process.env.DEPLOY_PRIVATE_KEY ? [process.env.DEPLOY_PRIVATE_KEY] : [],
-      chainId: 747,
+      chainId: 11155111,
     },
   },
 };

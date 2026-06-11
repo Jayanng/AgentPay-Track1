@@ -153,8 +153,8 @@ async function main() {
     // ============================================================
     console.log("💳 STEP 4: Making USDC payment on Solana...\n");
 
-    if (!process.env.WALLET_SECRET_KEY) {
-      console.error("❌ WALLET_SECRET_KEY not set in .env!");
+    if (!process.env.WALLET_PRIVATE_KEY && !process.env.ETH_PRIVATE_KEY) {
+      console.error("❌ WALLET_PRIVATE_KEY (or ETH_PRIVATE_KEY) not set in .env!");
       console.log("   Please add your Solana wallet private key to .env");
       console.log("   This wallet needs devnet USDC to make payments.\n");
       console.log("📝 Simulating payment for demo purposes...\n");
@@ -171,7 +171,7 @@ async function main() {
       console.log("✅ Step 3: Initiate Checkout - PASSED");
       console.log("⚠️  Step 4: Make Payment - SKIPPED (no wallet)");
       console.log("⚠️  Step 5: Finalize Checkout - SKIPPED");
-      console.log("\nTo complete the test, add WALLET_SECRET_KEY to your .env file");
+      console.log("\nTo complete the test, add WALLET_PRIVATE_KEY (or ETH_PRIVATE_KEY) to your .env file");
       console.log("and ensure the wallet has devnet USDC balance.\n");
       process.exit(0);
     }

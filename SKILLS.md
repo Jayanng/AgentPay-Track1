@@ -1,17 +1,17 @@
-# SuperPage Skills
+# AgentPay Skills
 
-SuperPage is an AI-native marketplace where agents can discover, purchase, and access digital resources and physical products using cryptocurrency payments.
+AgentPay is an AI-native marketplace where agents can discover, purchase, and access digital resources and physical products using cryptocurrency payments.
 
 **Base URL:** `http://localhost:3001` (local) | `http://20.168.79.130` (production)
 
-**Payment:** USDC on Flow EVM Testnet (chain ID 545)
+**Payment:** USDC on Sepolia (chain ID 11155111)
 
 ---
 
 ## 🔍 Discovery Skills
 
 ### discover_platform
-Get an overview of what's available on SuperPage
+Get an overview of what's available on AgentPay
 
 **Method:** `GET /api/explore`
 
@@ -128,7 +128,7 @@ Buy access to a digital resource (API, file, or article)
   "currency": "USDC",
   "recipient": "0x...",
   "resourceId": "resource_id",
-  "chainId": 545
+  "chainId": 11155111
 }
 ```
 
@@ -310,7 +310,7 @@ Connect a Shopify store to accept crypto payments
 
 ## 🤖 Agent-to-Agent (A2A) Protocol
 
-SuperPage supports the Agent-to-Agent Protocol (AP2) for autonomous agent interactions.
+AgentPay supports the Agent-to-Agent Protocol (AP2) for autonomous agent interactions.
 
 ### get_agent_card
 Discover agent capabilities
@@ -347,13 +347,13 @@ Send a message to the agent (JSON-RPC 2.0)
 
 ## 🌐 Blockchain Details
 
-**Network:** Flow EVM Testnet
-- **Chain ID:** 545
-- **RPC:** `https://testnet.evm.nodes.onflow.org`
-- **Explorer:** `https://evm-testnet.flowscan.io`
-- **Gas:** FLOW (~$0.01 per tx)
-- **Native Token:** FLOW
-- **Faucet:** `https://faucet.flow.com/fund-account`
+**Network:** Sepolia
+- **Chain ID:** 11155111
+- **RPC:** `https://ethereum-sepolia-rpc.publicnode.com`
+- **Explorer:** `https://sepolia.etherscan.io`
+- **Gas:** ETH (~$0.01 per tx)
+- **Native Token:** ETH
+- **Faucet:** `https://faucet.chainstack.com/sepolia-faucet`
 
 **USDC Contract:** `0x291b030d596cf505f774426d8de7c946ce5af7a5`
 - **Decimals:** 6
@@ -488,13 +488,13 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "superpage": {
+    "AgentPay": {
       "command": "node",
-      "args": ["/path/to/packages/mcp-client/superpage-x402.js"],
+      "args": ["/path/to/packages/mcp-client/AgentPay-x402.js"],
       "env": {
-        "SUPERPAGE_SERVER": "http://localhost:3001",
+        "AgentPay_SERVER": "http://localhost:3001",
         "WALLET_PRIVATE_KEY": "0x...",
-        "X402_CHAIN": "flow-testnet",
+        "X402_CHAIN": "sepolia",
         "X402_CURRENCY": "USDC",
         "MAX_AUTO_PAYMENT": "10.00"
       }
@@ -542,7 +542,7 @@ const response = await fetch('http://localhost:3001/a2a', {
 - **MCP Guide:** `/docs/mcp`
 - **Agent Guide:** `/docs/ai-agents`
 
-**Platform:** SuperPage - AI-Native Web3 Commerce
+**Platform:** AgentPay - AI-Native Web3 Commerce
 **Protocol:** HTTP 402 Payment Required + x402 SDK
-**Blockchain:** Flow EVM (chain ID 545)
+**Blockchain:** Sepolia (chain ID 11155111)
 **Currency:** USDC (stablecoin)

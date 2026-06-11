@@ -26,15 +26,50 @@ const btnClass = (compact?: boolean) =>
 export function WalletConnect({ compact }: WalletConnectProps = {}) {
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletConfigured, setWalletConfigured] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    // Check if WalletConnect is configured
+    const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+    if (!projectId || projectId === "placeholder" || projectId === "YOUR_PROJECT_ID") {
+      setWalletConfigured(false);
+    }
   }, []);
 
-  const { address, isConnected } = useAccount();
-  const { openConnectModal } = useConnectModal();
-  const { disconnect } = useDisconnect();
+  // Use try-catch around wagmi hooks since they may fail if provider isn't set
+  let address: string | undefined;
+  let isConnected = false;
+  let openConnectModal: (() => void) | undefined;
+  let disconnect: (() => void) | undefined;
+
+  try {
+    const account = useAccount();
+    const disconnectHook = useDisconnect();
+    const connectModalHook = useConnectModal();
+    address = account.address;
+    isConnected = account.isConnected || false;
+    openConnectModal = connectModalHook.openConnectModal;
+    disconnect = disconnectHook.disconnect;
+  } catch (e) {
+    // Wallet provider not initialized
+    setWalletConfigured(false);
+  }
+
   const { creator, isAuthenticated, isLoading, signIn, signOut } = useAuth();
+
+  // If wallet is not configured, show a simplified connect button that does nothing
+  if (!walletConfigured) {
+    return (
+      <button
+        className={btnClass(compact)}
+        title="Wallet not configured - set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID to enable"
+      >
+        <Wallet className="h-4 w-4" />
+        <span>Connect Wallet</span>
+      </button>
+    );
+  }
 
   if (!mounted) {
     return (

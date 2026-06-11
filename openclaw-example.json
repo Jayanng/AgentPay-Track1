@@ -3,11 +3,11 @@
     "model": "anthropic/claude-sonnet-4-20250514"
   },
   "mcpServers": {
-    "superpage-x402": {
+    "AgentPay-x402": {
       "command": "node",
-      "args": ["./packages/mcp-client/superpage-x402.js"],
+      "args": ["./packages/mcp-client/AgentPay-x402.js"],
       "env": {
-        "SUPERPAGE_SERVER": "http://localhost:3001",
+        "AgentPay_SERVER": "http://localhost:3001",
         "WALLET_PRIVATE_KEY": "YOUR_WALLET_PRIVATE_KEY_HERE",
         "X402_CHAIN": "base",
         "X402_CURRENCY": "USDC",

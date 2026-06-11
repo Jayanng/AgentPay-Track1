@@ -22,6 +22,11 @@ import exploreRoutes from "./routes/exploreRoutes.js";
 import resourceRoutes from "./routes/resourceRoutes.js";
 import creatorRoutes from "./routes/creatorRoutes.js";
 import storeRoutes from "./routes/storeRoutes.js";
+import cawRoutes from "./routes/cawRoutes.js";
+import escrowRoutes from "./routes/escrowRoutes.js";
+
+// Services
+import { initializeDefaultPacts } from "./services/pact-defaults.js";
 
 // Error handling
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -122,6 +127,14 @@ app.use("/", a2aRoutes);
 // Public profiles (mounted at root)
 app.use("/", profileRoutes);
 
+// CAW (Cobo Agentic Wallet)
+app.use("/api/caw", cawRoutes);
+app.use("/api/pacts", cawRoutes);
+app.use("/api/demo", cawRoutes);
+
+// Escrow
+app.use("/api/escrow", escrowRoutes);
+
 // ============================================================
 // ERROR HANDLING MIDDLEWARE (must be last)
 // ============================================================
@@ -131,9 +144,7 @@ app.use(errorHandler);
 // ENVIRONMENT VALIDATION
 // ============================================================
 function validateEnvironment() {
-  const required = [
-    'SHOPIFY_API_KEY',
-    'SHOPIFY_CLIENT_SECRET',
+  const base = [
     'MONGODB_URI',
     'JWT_SECRET',
     'APP_URL',
@@ -142,24 +153,47 @@ function validateEnvironment() {
 
   const missing: string[] = [];
 
-  for (const key of required) {
+  for (const key of base) {
     if (!process.env[key]) {
       missing.push(key);
     }
   }
+
+  // Wallet mode specific validation
+  if (process.env.WALLET_MODE === 'caw') {
+    const cawVars = ['CAW_API_KEY', 'CAW_API_URL', 'CAW_WALLET_UUID'];
+    for (const key of cawVars) {
+      if (!process.env[key]) {
+        missing.push(key);
+      }
+    }
+  } else {
+    if (!process.env.WALLET_PRIVATE_KEY && !process.env.ETH_PRIVATE_KEY) {
+      missing.push('WALLET_PRIVATE_KEY or ETH_PRIVATE_KEY');
+    }
+  }
+
+  const optional = [
+    'SHOPIFY_API_KEY',
+    'SHOPIFY_CLIENT_SECRET'
+  ];
 
   if (missing.length > 0) {
     console.error('\n❌ MISSING REQUIRED ENVIRONMENT VARIABLES:\n');
     missing.forEach(key => console.error(`   - ${key}`));
     console.error('\n📝 Please add these to packages/backend/.env\n');
     console.error('Example:');
-    console.error('  SHOPIFY_API_KEY=your-client-id');
-    console.error('  SHOPIFY_CLIENT_SECRET=your-client-secret');
     console.error('  MONGODB_URI=mongodb://localhost:27017/x402');
     console.error('  JWT_SECRET=your-secret-key');
     console.error('  APP_URL=http://localhost:3001');
     console.error('  FRONTEND_URL=http://localhost:3000\n');
     process.exit(1);
+  }
+
+  // Warn about optional Shopify vars
+  const missingOptional = optional.filter(key => !process.env[key] || process.env[key] === 'placeholder');
+  if (missingOptional.length > 0) {
+    console.log(`⚠️  Shopify vars not configured (${missingOptional.join(', ')}). Shopify features will be disabled.`);
   }
 
   console.log('✅ All required environment variables are set\n');
@@ -179,7 +213,7 @@ async function startServer() {
     // Migrate stale store networks to configured chain
     try {
       const { Store } = await import("./models/Store.js");
-      const target = process.env.X402_CHAIN || "base-sepolia";
+      const target = process.env.X402_CHAIN || "sepolia";
       const result = await Store.updateMany(
         { networks: { $nin: [target] } },
         { $set: { networks: [target] } }
@@ -191,18 +225,18 @@ async function startServer() {
       console.warn("[migration] Store network migration skipped:", (e as Error).message);
     }
 
-    // ERC-8004: Auto-register agent identity on Flow if not configured
+    // ERC-8004: Auto-register agent identity on Sepolia if not configured
     try {
       const { getERC8004Config, ERC8004_EXPLORER_URL } = await import("./erc8004/config.js");
       const config = getERC8004Config();
       if (config.agentId !== null) {
-        console.log(`[ERC-8004] Agent registered: ID=${config.agentId} (chain: eip155:545)`);
+        console.log(`[ERC-8004] Agent registered: ID=${config.agentId} (chain: eip155:11155111)`);
       } else if (config.walletPrivateKey) {
         console.log("[ERC-8004] No agent ID configured, auto-registering...");
         const { registerAgent } = await import("./erc8004/identity.js");
         const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
         const result = await registerAgent(`${baseUrl}/.well-known/agent-registration.json`);
-        console.log(`[ERC-8004] ✅ Registered agent ID=${result.agentId} on Flow EVM Testnet`);
+        console.log(`[ERC-8004] ✅ Registered agent ID=${result.agentId} on Sepolia`);
         console.log(`[ERC-8004]    tx: ${ERC8004_EXPLORER_URL}/tx/${result.txHash}`);
         console.log(`[ERC-8004]    Set ERC8004_AGENT_ID=${result.agentId} in .env to skip next time`);
         process.env.ERC8004_AGENT_ID = result.agentId.toString();
@@ -212,6 +246,9 @@ async function startServer() {
     } catch (e) {
       console.warn("[ERC-8004] Auto-registration failed:", (e as Error).message);
     }
+
+    // Initialize default CAW pacts (buyer, seller, settler policies)
+    await initializeDefaultPacts();
 
     // Start Express server
     app.listen(PORT, () => {

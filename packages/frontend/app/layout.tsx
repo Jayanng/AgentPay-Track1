@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono, Sora } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { HackathonBadge } from "@/components/hackathon-badge";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -20,8 +21,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SuperPage - Monetize Anything with Crypto on Base",
-  description: "Paywall your APIs, files, articles, and stores with USDC on Base. AI-agent ready payments powered by HTTP 402.",
+  title: "AgentPay - AI-Powered Escrow Marketplace with Cobo Agentic Wallet",
+  description: "Agentic Economy meets DeFi — Buy and sell digital resources with Cobo Agentic Wallet, Pact policies, and trustless escrow on Ethereum Sepolia",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -48,7 +49,10 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${sora.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ErrorBoundary>
-          <Providers>{children}</Providers>
+          <Providers>
+            {children}
+            <HackathonBadge />
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>

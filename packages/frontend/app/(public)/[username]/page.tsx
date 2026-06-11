@@ -279,7 +279,7 @@ export default function PublicProfilePage() {
             onClick={() => {
               if (navigator.share) {
                 navigator.share({
-                  title: `${profile.displayName || profile.username} on SuperPage`,
+                  title: `${profile.displayName || profile.username} on AgentPay`,
                   url: window.location.href
                 });
               } else {
@@ -611,9 +611,9 @@ export default function PublicProfilePage() {
             <div className="size-8 rounded-full bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">S</span>
             </div>
-            <span className="text-sm font-bold">SuperPage</span>
+            <span className="text-sm font-bold">AgentPay</span>
           </div>
-          <p className="text-xs text-muted-foreground">Join {profile.username} on SuperPage today</p>
+          <p className="text-xs text-muted-foreground">Join {profile.username} on AgentPay today</p>
         </footer>
       </main>
 

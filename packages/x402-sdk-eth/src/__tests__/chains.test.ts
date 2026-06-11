@@ -49,9 +49,7 @@ describe("Chain Registry", () => {
     expect(networks).toContain("cronos");
     expect(networks).toContain("cronos-testnet");
     expect(networks).toContain("bite-v2-sandbox");
-    expect(networks).toContain("flow");
-    expect(networks).toContain("flow-testnet");
-    expect(networks.length).toBe(16);
+    expect(networks.length).toBe(14);
   });
 
   it("should have consistent chainId across registry", () => {

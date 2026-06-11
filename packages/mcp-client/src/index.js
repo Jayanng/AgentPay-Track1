@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SuperPage x402 — MCP Client for AI Agents
+ * AgentPay x402 — MCP Client for AI Agents
  *
  * Entry point: assembles tools from all modules, provides CLI mode
  * and MCP STDIO protocol handler.
@@ -52,7 +52,7 @@ export async function handleTool(name, args) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CLI MODE -- for direct invocation by agents (OpenClaw, etc.)
-// Usage: node superpage-x402.js <command> [json-args]
+// Usage: node AgentPay-x402.js <command> [json-args]
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CLI_COMMANDS = {
@@ -118,9 +118,9 @@ if (cliCommand && CLI_COMMANDS[cliCommand]) {
     }
   })();
 } else if (cliCommand === "help" || cliCommand === "--help") {
-  console.log(`SuperPage x402 CLI \u2014 AI Agent Marketplace
+  console.log(`AgentPay x402 CLI \u2014 AI Agent Marketplace
 
-Usage: node superpage-x402.js <command> [json-args]
+Usage: node AgentPay-x402.js <command> [json-args]
 
 Commands:
   list-resources          List all available resources with prices
@@ -138,14 +138,14 @@ Commands:
   discover                Probe a URL for x402 support
 
 Examples:
-  node superpage-x402.js list-resources
-  node superpage-x402.js search '{"query":"weather"}'
-  node superpage-x402.js wallet
-  node superpage-x402.js request '{"url":"${SERVER_URL}/x402/resource/my-resource"}'
-  node superpage-x402.js browse-products '{"storeId":"shopify/my-store"}'
+  node AgentPay-x402.js list-resources
+  node AgentPay-x402.js search '{"query":"weather"}'
+  node AgentPay-x402.js wallet
+  node AgentPay-x402.js request '{"url":"${SERVER_URL}/x402/resource/my-resource"}'
+  node AgentPay-x402.js browse-products '{"storeId":"shopify/my-store"}'
 
 Environment:
-  SUPERPAGE_SERVER=${SERVER_URL}
+  AgentPay_SERVER=${SERVER_URL}
   X402_CHAIN=${NETWORK}
   X402_CURRENCY=${CURRENCY}
   MAX_AUTO_PAYMENT=${MAX_AUTO_PAYMENT}
@@ -178,7 +178,7 @@ Environment:
               protocolVersion: clientVersion,
               capabilities: { tools: {} },
               serverInfo: {
-                name: "superpage-x402",
+                name: "AgentPay-x402",
                 version: "2.0.0",
               },
             },
@@ -234,7 +234,7 @@ Environment:
   });
 
   log("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
-  log("  SUPERPAGE x402 MCP Client Ready \u26a1");
+  log("  AgentPay x402 MCP Client Ready \u26a1");
   log(`  Network: ${NETWORK} | Token: ${CURRENCY}`);
   log("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
 }

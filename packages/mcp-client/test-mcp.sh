@@ -2,11 +2,11 @@
 
 # Test MCP Client for Claude Desktop
 
-echo "Testing superpage-x402 MCP client..."
+echo "Testing AgentPay-x402 MCP client..."
 echo ""
 
 # Set environment
-export SUPERPAGE_SERVER="http://localhost:3001"
+export AgentPay_SERVER="http://localhost:3001"
 export WALLET_PRIVATE_KEY="REDACTED_WALLET_PRIVATE_KEY"
 export X402_CHAIN="mantle-sepolia"
 export X402_CURRENCY="MNT"
@@ -15,7 +15,7 @@ export X402_TOKEN_DECIMALS="18"
 export MAX_AUTO_PAYMENT="10.00"
 
 # Start MCP server in background
-node superpage-x402.js > /tmp/mcp-output.log 2>&1 &
+node AgentPay-x402.js > /tmp/mcp-output.log 2>&1 &
 MCP_PID=$!
 
 echo "MCP server started (PID: $MCP_PID)"

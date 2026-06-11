@@ -2,13 +2,13 @@
  * ERC-8004 Configuration
  *
  * Contract addresses and chain config for the ERC-8004 Trustless Agents
- * registries deployed on Flow EVM Testnet (chainId: 545).
+ * registries deployed on Sepolia (chainId: 11155111).
  */
 
-export const ERC8004_CHAIN_ID = 545;
-export const ERC8004_NETWORK = "flow-testnet" as const;
-export const ERC8004_RPC_URL = "https://testnet.evm.nodes.onflow.org";
-export const ERC8004_EXPLORER_URL = "https://evm-testnet.flowscan.io";
+export const ERC8004_CHAIN_ID = 11155111;
+export const ERC8004_NETWORK = "sepolia" as const;
+export const ERC8004_RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com";
+export const ERC8004_EXPLORER_URL = "https://sepolia.etherscan.io";
 
 export const ERC8004_CONTRACTS = {
   identityRegistry: "0xbdf0ae617ac3570795b9b18ece6fd85444c6a918" as `0x${string}`,

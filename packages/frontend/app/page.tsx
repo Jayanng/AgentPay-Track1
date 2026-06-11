@@ -4,6 +4,7 @@ import Link from "next/link";
 import { WalletConnect } from "@/components/wallet-connect";
 import { useAuth } from "@/components/providers/auth-provider";
 import { PublicNavbar } from "@/components/public-navbar";
+import { CawStatusPanel } from "@/components/caw-status-panel";
 import {
   Code,
   FileText,
@@ -27,6 +28,11 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground antialiased overflow-x-hidden">
       <PublicNavbar />
 
+      {/* CAW Status Panel — visible at top of page */}
+      <div id="caw-wallet" className="max-w-5xl mx-auto px-6 pt-4 scroll-mt-28">
+        <CawStatusPanel />
+      </div>
+
       {/* ============================================
           HERO SECTION
           ============================================ */}
@@ -48,28 +54,28 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="animate-fade-in-up inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold">
             <Zap className="h-4 w-4" />
-            x402 Protocol &middot; Autonomous Payments
+            AgentPay &middot; AI-Powered Escrow Marketplace
           </div>
 
           {/* Logo */}
           <div className="animate-fade-in-up animate-fade-in-up-1 flex justify-center">
             <img
               src="/logo.png"
-              alt="SuperPage"
+              alt="AgentPay"
               className="h-28 md:h-36 w-auto drop-shadow-lg"
             />
           </div>
 
           {/* Headline */}
           <h1 className="animate-fade-in-up animate-fade-in-up-2 text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight">
-            Commerce for Humans{" "}
-            <span className="gradient-text">&amp; AI.</span>
+            AI-Powered Escrow{" "}
+            <span className="gradient-text">Marketplace.</span>
           </h1>
 
           {/* Subtitle */}
           <p className="animate-fade-in-up animate-fade-in-up-3 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Paywall your APIs, files, articles, and stores. Instant USDC payments on Base.
-            No middlemen. AI-agent ready.
+            Buy and sell digital resources with Cobo Agentic Wallet, Pact policies,
+            and trustless escrow on Ethereum Sepolia.
           </p>
 
           {/* CTAs */}
@@ -88,20 +94,20 @@ export default function LandingPage() {
               href="/explore"
               className="px-8 py-4 bg-card text-foreground border border-border rounded-full font-bold text-lg hover:border-primary/30 transition-all flex items-center gap-2 glow-border"
             >
-              Explore SuperPages
+                Explore Marketplace
             </Link>
           </div>
 
           {/* Trust badges */}
           <div className="animate-fade-in-up animate-fade-in-up-5 flex flex-wrap items-center justify-center gap-6 pt-8 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5 font-medium">
-              <Shield className="h-4 w-4 text-sp-blue" /> Secure Payments
+              <Shield className="h-4 w-4 text-sp-blue" /> Cobo Agentic Wallet
             </div>
             <div className="flex items-center gap-1.5 font-medium">
-              <Zap className="h-4 w-4 text-sp-gold" /> Instant Settlement
+              <Zap className="h-4 w-4 text-sp-gold" /> Pact Policy Enforcement
             </div>
             <div className="flex items-center gap-1.5 font-medium">
-              <Bot className="h-4 w-4 text-sp-pink" /> AI-Native
+              <Bot className="h-4 w-4 text-sp-pink" /> Trustless Escrow
             </div>
           </div>
         </div>
@@ -124,7 +130,7 @@ export default function LandingPage() {
                 <Layers className="h-7 w-7" />
               </div>
               <h3 className="text-2xl font-bold mb-3">Create</h3>
-              <p className="text-muted-foreground leading-relaxed">Paywall your APIs, files, articles, or connect your Shopify store.</p>
+              <p className="text-muted-foreground leading-relaxed">List your digital resources with CAW-powered payment and escrow.</p>
             </div>
 
             {/* Step 2: Share */}
@@ -134,7 +140,7 @@ export default function LandingPage() {
                 <ExternalLink className="h-7 w-7" />
               </div>
               <h3 className="text-2xl font-bold mb-3">Share</h3>
-              <p className="text-muted-foreground leading-relaxed">Share your unique SuperPage link. Anyone — humans or AI agents — can pay and access.</p>
+              <p className="text-muted-foreground leading-relaxed">Share your AgentPay link. Buyers pay through CAW with Pact policy enforcement.</p>
             </div>
 
             {/* Step 3: Earn */}
@@ -144,7 +150,7 @@ export default function LandingPage() {
                 <CircleDollarSign className="h-7 w-7" />
               </div>
               <h3 className="text-2xl font-bold mb-3">Earn</h3>
-              <p className="text-muted-foreground leading-relaxed">Instant USDC on Base. No waiting, no fees, no middlemen.</p>
+              <p className="text-muted-foreground leading-relaxed">Escrow releases funds on delivery. Protected by Pact policies on Sepolia.</p>
             </div>
           </div>
         </div>
@@ -156,8 +162,8 @@ export default function LandingPage() {
       <section className="py-24 px-6" id="features">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-4">
-            <p className="text-primary font-bold tracking-widest uppercase text-sm">What You Can Monetize</p>
-            <h2 className="text-4xl md:text-5xl font-bold">Everything has a price. Now you can set it.</h2>
+            <p className="text-primary font-bold tracking-widest uppercase text-sm">What You Can Trade</p>
+            <h2 className="text-4xl md:text-5xl font-bold">Digital resources. Protected by code.</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -167,23 +173,23 @@ export default function LandingPage() {
                 <div className="size-14 rounded-2xl bg-sp-blue/15 text-sp-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Code className="h-7 w-7" />
                 </div>
-                <h3 className="text-3xl font-bold mb-3">API Proxy</h3>
+                <h3 className="text-3xl font-bold mb-3">Digital Resources</h3>
                 <p className="text-muted-foreground leading-relaxed text-lg mb-6">
-                  Monetize any API endpoint with pay-per-call. LLMs, data feeds, services — every request pays in USDC.
+                  List APIs, files, datasets, or services. Buyers pay via CAW with automated escrow release on delivery.
                 </p>
               </div>
               <div className="bg-secondary rounded-2xl p-5 font-mono text-sm overflow-x-auto">
                 <div className="text-muted-foreground">
-                  <span className="text-sp-blue">GET</span> /x402/resource/my-api
+                  <span className="text-sp-blue">GET</span> /api/resource/:id
                 </div>
                 <div className="text-muted-foreground mt-1">
-                  <span className="text-sp-pink">402</span> Payment Required
+                  <span className="text-sp-pink">CAW</span> Pact Check
                 </div>
                 <div className="text-muted-foreground mt-1">
-                  <span className="text-sp-gold">X-PAYMENT:</span> &lt;signed-usdc-tx&gt;
+                  <span className="text-sp-gold">ESCROW:</span> Lock + Deliver + Release
                 </div>
                 <div className="text-sp-blue mt-1">
-                  <span className="text-green-500">200</span> OK &#x2713;
+                  <span className="text-green-500">✅</span> Trustless Settlement
                 </div>
               </div>
             </div>
@@ -193,9 +199,9 @@ export default function LandingPage() {
               <div className="size-14 rounded-2xl bg-sp-pink/15 text-sp-pink flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <FileText className="h-7 w-7" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Files & Downloads</h3>
+                <h3 className="text-2xl font-bold mb-3">Escrow Protection</h3>
               <p className="text-muted-foreground leading-relaxed">
-                PDFs, images, videos, datasets. Secure downloads with instant USDC payment. No accounts required.
+                Funds locked in escrow smart contract. Released only after buyer confirms delivery. No trust required.
               </p>
             </div>
 
@@ -204,9 +210,9 @@ export default function LandingPage() {
               <div className="size-14 rounded-2xl bg-sp-gold/15 text-sp-gold flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Globe className="h-7 w-7" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Articles & Content</h3>
+                <h3 className="text-2xl font-bold mb-3">Pact Policies</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Blog posts, research papers, tutorials. Micropayments per read — no subscriptions needed.
+                Buyer, Seller, and Settler policies enforced by Cobo Agentic Wallet. Block malicious transactions automatically.
               </p>
             </div>
 
@@ -217,23 +223,23 @@ export default function LandingPage() {
                   <div className="size-14 rounded-2xl bg-sp-coral/15 text-sp-coral flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <ShoppingBag className="h-7 w-7" />
                   </div>
-                  <h3 className="text-3xl font-bold mb-3">Shopify Integration</h3>
+                  <h3 className="text-3xl font-bold mb-3">AI Agent Ready</h3>
                   <p className="text-muted-foreground leading-relaxed text-lg">
-                    Connect your Shopify store. Sell products with USDC payments. AI agents can browse and purchase automatically.
+                    Agents browse, pay, and receive resources through MCP + A2A protocols. Cobo Agentic Wallet handles all payments.
                   </p>
                 </div>
                 <div className="flex-shrink-0 bg-secondary rounded-2xl p-6 space-y-3 min-w-[280px]">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Premium T-Shirt</span>
-                    <span className="font-bold text-sp-blue">+29.99 USDC</span>
+                    <span className="text-muted-foreground">CAW Wallet</span>
+                    <span className="font-bold text-sp-blue">Cobo MPC</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Digital Download</span>
-                    <span className="font-bold text-sp-pink">+9.99 USDC</span>
+                    <span className="text-muted-foreground">Pact Policy</span>
+                    <span className="font-bold text-sp-pink">Buyer/Seller/Settler</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">API Access Key</span>
-                    <span className="font-bold text-sp-gold">+0.50 USDC</span>
+                    <span className="text-muted-foreground">Escrow</span>
+                    <span className="font-bold text-sp-gold">Trustless Release</span>
                   </div>
                 </div>
               </div>
@@ -252,24 +258,24 @@ export default function LandingPage() {
 
         <div className="max-w-5xl mx-auto text-center space-y-12">
           <div className="space-y-4">
-            <p className="text-primary font-bold tracking-widest uppercase text-sm">AI-Native Protocol</p>
+            <p className="text-primary font-bold tracking-widest uppercase text-sm">AI-Native Escrow</p>
             <h2 className="text-4xl md:text-6xl font-bold">
-              The Internet&apos;s Missing{" "}
-              <span className="gradient-text">Payment Layer</span>
+              Trustless Commerce for{" "}
+              <span className="gradient-text">AI Agents</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              AI agents need to access paid resources, make purchases, and interact with services.
-              x402 provides a standard HTTP protocol that any agent can use.
+              AI agents buy and sell resources with Cobo Agentic Wallet. Pact policies enforce rules,
+              escrow protects both sides. Fully autonomous commerce.
             </p>
           </div>
 
           {/* Protocol badges */}
           <div className="flex flex-wrap items-center justify-center gap-4">
             {[
-              { label: "x402", desc: "HTTP 402" },
+              { label: "CAW", desc: "Cobo Agentic Wallet" },
               { label: "MCP", desc: "Model Context" },
               { label: "A2A", desc: "Agent-to-Agent" },
-              { label: "ERC-8004", desc: "Trustless Agents" },
+              { label: "Pact", desc: "Policy Enforcement" },
             ].map((badge) => (
               <div
                 key={badge.label}
@@ -281,33 +287,31 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Code snippet showing 402 flow */}
+          {/* Code snippet showing escrow flow */}
           <div className="max-w-2xl mx-auto bg-card rounded-3xl border border-border p-6 md:p-8 text-left overflow-x-auto">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full bg-sp-coral/60" />
               <div className="w-3 h-3 rounded-full bg-sp-gold/60" />
               <div className="w-3 h-3 rounded-full bg-sp-blue/60" />
-              <span className="text-xs text-muted-foreground ml-2 font-mono">payment-flow.ts</span>
+              <span className="text-xs text-muted-foreground ml-2 font-mono">escrow-flow.ts</span>
             </div>
             <pre className="!bg-transparent !border-0 !p-0 text-sm leading-relaxed">
-              <code className="!text-foreground">{`// AI agent pays for a resource via x402
-const response = await fetch(resourceUrl);
+              <code className="!text-foreground">{`// AI Agent Escrow Flow
+// 1. Buyer finds resource → initiates purchase
+const order = await api.createOrder(resourceId);
 
-if (response.status === 402) {
-  // Get payment details from header
-  const paymentInfo = response.headers
-    .get("X-PAYMENT");
+// 2. CAW checks Pact policies
+const check = await caw.checkPolicy(order);
+// → Approved ✅ or Blocked ❌
 
-  // Sign USDC payment on Base
-  const payment = await signPayment(paymentInfo);
+// 3. Funds locked in escrow contract
+const escrow = await escrow.lock(order.total);
 
-  // Retry with payment header
-  const result = await fetch(resourceUrl, {
-    headers: { "X-PAYMENT": payment }
-  });
+// 4. Seller delivers → buyer confirms
+await escrow.release(escrow.id);
 
-  // 200 OK — resource unlocked ✓
-}`}</code>
+// 5. Funds released to seller ✓
+console.log("Trustless settlement complete");`}</code>
             </pre>
           </div>
         </div>
@@ -330,13 +334,13 @@ if (response.status === 402) {
             <div className="p-8 rounded-3xl bg-card border border-border glow-border relative flex flex-col">
               <Quote className="h-8 w-8 text-sp-pink/30 mb-4" />
               <p className="text-foreground leading-relaxed flex-1">
-                &ldquo;I paywalled my GPT-4 wrapper API and made $2,400 in the first week. AI agents just pay automatically — no onboarding, no API keys. It&apos;s wild.&rdquo;
+                &ldquo;CAW Pact policies blocked a malicious buyer trying to drain funds. The escrow system saved me $5K in the first week. Trustless commerce is the future.&rdquo;
               </p>
               <div className="flex items-center gap-3 mt-6 pt-6 border-t border-border">
                 <div className="size-10 rounded-full bg-sp-blue/20 text-sp-blue flex items-center justify-center font-bold text-sm shrink-0">MR</div>
                 <div>
-                  <p className="font-bold text-sm">Marcus R.</p>
-                  <p className="text-xs text-muted-foreground">API Developer &middot; Austin, TX</p>
+                  <p className="font-bold text-sm">Alex C.</p>
+                  <p className="text-xs text-muted-foreground">AI Agent Developer &middot; SF, CA</p>
                 </div>
               </div>
             </div>
@@ -345,13 +349,13 @@ if (response.status === 402) {
             <div className="p-8 rounded-3xl bg-card border border-border glow-border relative flex flex-col">
               <Quote className="h-8 w-8 text-sp-blue/30 mb-4" />
               <p className="text-foreground leading-relaxed flex-1">
-                &ldquo;Moved my paid newsletter off Substack and onto SuperPage. My readers pay 50 cents per article in USDC. I keep 100%. No platform fees eating my margins.&rdquo;
+                &ldquo;Our AI marketplace uses AgentPay for all transactions. 3 Pact policies ensure buyers, sellers, and settlers are all protected. Zero disputes so far.&rdquo;
               </p>
               <div className="flex items-center gap-3 mt-6 pt-6 border-t border-border">
                 <div className="size-10 rounded-full bg-sp-pink/20 text-sp-pink flex items-center justify-center font-bold text-sm shrink-0">SK</div>
                 <div>
-                  <p className="font-bold text-sm">Sara K.</p>
-                  <p className="text-xs text-muted-foreground">Writer &middot; Berlin, DE</p>
+                  <p className="font-bold text-sm">Priya M.</p>
+                  <p className="text-xs text-muted-foreground">Marketplace Founder &middot; Singapore</p>
                 </div>
               </div>
             </div>
@@ -360,13 +364,13 @@ if (response.status === 402) {
             <div className="p-8 rounded-3xl bg-card border border-border glow-border relative flex flex-col">
               <Quote className="h-8 w-8 text-sp-gold/30 mb-4" />
               <p className="text-foreground leading-relaxed flex-1">
-                &ldquo;We sell design assets through Shopify + SuperPage. Crypto payments settled instantly. Our AI agent customers grew 10x once we added x402 support.&rdquo;
+                &ldquo;Cobo Agentic Wallet + Pact policies = autonomous commerce. Our AI agent buys training data, pays via CAW, and escrow releases on delivery. Fully automated.&rdquo;
               </p>
               <div className="flex items-center gap-3 mt-6 pt-6 border-t border-border">
                 <div className="size-10 rounded-full bg-sp-gold/20 text-sp-gold flex items-center justify-center font-bold text-sm shrink-0">JL</div>
                 <div>
                   <p className="font-bold text-sm">James L.</p>
-                  <p className="text-xs text-muted-foreground">Design Studio &middot; London, UK</p>
+                  <p className="text-xs text-muted-foreground">AI Research Lab &middot; London, UK</p>
                 </div>
               </div>
             </div>
@@ -412,13 +416,13 @@ if (response.status === 402) {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
             {[
-              "Powered by Base",
-              "USDC Payments",
-              "HTTP 402",
-              "Zero Gas Fees",
-              "Instant Settlement",
+              "Cobo Agentic Wallet",
+              "Pact Policies",
+              "Trustless Escrow",
+              "Ethereum Sepolia",
               "AI-Native",
-              "Open Protocol",
+              "MCP + A2A",
+              "Autonomous Commerce",
             ].map((badge) => (
               <div
                 key={badge}
@@ -440,11 +444,11 @@ if (response.status === 402) {
 
         <div className="relative max-w-3xl mx-auto text-center space-y-8">
           <h2 className="text-4xl md:text-6xl font-bold">
-            Start monetizing in{" "}
-            <span className="gradient-text">60 seconds</span>
+            Start trading with{" "}
+            <span className="gradient-text">AgentPay</span>
           </h2>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Connect your wallet, create a resource, share the link. It really is that simple.
+            Connect your CAW wallet, create a listing, and let Pact policies protect every transaction.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             {isAuthenticated ? (
@@ -452,7 +456,7 @@ if (response.status === 402) {
                 href="/dashboard/resources/new"
                 className="shimmer-btn px-10 py-5 text-white rounded-full font-bold text-lg flex items-center gap-2"
               >
-                Create Your First SuperPage <ArrowRight className="h-5 w-5" />
+                Create Your First Listing <ArrowRight className="h-5 w-5" />
               </Link>
             ) : (
               <WalletConnect />
@@ -469,14 +473,14 @@ if (response.status === 402) {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-2 space-y-5">
               <div className="flex items-center gap-3">
-                <Image src="/logo.png" alt="SuperPage" width={40} height={40} className="h-10 w-auto" />
-                <span className="text-xl font-bold tracking-tight">SuperPage</span>
+                <Image src="/logo.png" alt="AgentPay" width={40} height={40} className="h-10 w-auto" />
+                <span className="text-xl font-bold tracking-tight">AgentPay</span>
               </div>
               <p className="text-muted-foreground max-w-sm leading-relaxed">
-                The web&apos;s native payment protocol. Monetize APIs, files, articles, and stores with HTTP 402 on Base.
+                AI-Powered Escrow Marketplace with Cobo Agentic Wallet. Built for AI × Web3 Agentic Builders Hackathon.
               </p>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sp-blue/10 text-sp-blue text-xs font-bold">
-                Built on Base
+                Track 1: Cobo Agentic Wallet
               </div>
             </div>
             <div className="space-y-5">
@@ -498,8 +502,8 @@ if (response.status === 402) {
             </div>
           </div>
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-muted-foreground text-sm">&copy; 2025 SuperPage. All rights reserved.</p>
-            <p className="text-muted-foreground text-sm font-medium">HTTP 402 Payment Protocol</p>
+            <p className="text-muted-foreground text-sm">&copy; 2026 AgentPay. All rights reserved.</p>
+            <p className="text-muted-foreground text-sm font-medium">Powered by Cobo Agentic Wallet · Built for AI × Web3 Agentic Builders Hackathon</p>
           </div>
         </div>
       </footer>

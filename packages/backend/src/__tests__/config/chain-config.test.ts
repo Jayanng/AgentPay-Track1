@@ -155,8 +155,7 @@ describe("getSupportedNetworks", () => {
     expect(networks.length).toBe(16);
     expect(networks).toContain("mainnet");
     expect(networks).toContain("bite-v2-sandbox");
-    expect(networks).toContain("flow");
-    expect(networks).toContain("flow-testnet");
+    expect(networks).toContain("sepolia");
   });
 });
 

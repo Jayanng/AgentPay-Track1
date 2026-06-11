@@ -1,4 +1,4 @@
-# SuperPage MCP Client - Demo Setup
+# AgentPay MCP Client - Demo Setup
 
 ## Quick Setup for Claude Desktop (Localhost Demo)
 
@@ -19,20 +19,20 @@
 ~/.config/Claude/claude_desktop_config.json
 ```
 
-### 2. Add SuperPage MCP Server
+### 2. Add AgentPay MCP Server
 
 Open `claude_desktop_config.json` and add:
 
 ```json
 {
   "mcpServers": {
-    "superpage-x402": {
+    "AgentPay-x402": {
       "command": "node",
       "args": [
-        "/Users/beyond/Desktop/projects/superpay-x402-eth/packages/mcp-client/superpage-x402.js"
+        "/Users/beyond/Desktop/projects/superpay-x402-eth/packages/mcp-client/AgentPay-x402.js"
       ],
       "env": {
-        "SUPERPAGE_SERVER": "http://localhost:3001",
+        "AgentPay_SERVER": "http://localhost:3001",
         "WALLET_PRIVATE_KEY": "REDACTED_WALLET_PRIVATE_KEY",
         "X402_CHAIN": "bite-v2-sandbox",
         "X402_CURRENCY": "USDC",
@@ -54,15 +54,15 @@ Close and reopen Claude Desktop completely.
 In Claude Desktop, try these prompts:
 
 ```
-Can you show me what's available on SuperPage?
+Can you show me what's available on AgentPay?
 ```
 
 ```
-List all resources on SuperPage
+List all resources on AgentPay
 ```
 
 ```
-What stores are connected to SuperPage?
+What stores are connected to AgentPay?
 ```
 
 ## Available MCP Tools
@@ -83,7 +83,7 @@ Once configured, Claude can use these tools:
 
 ### Example 1: Discover and Browse
 ```
-Agent: "Show me what's available on SuperPage"
+Agent: "Show me what's available on AgentPay"
 (Uses x402_discover)
 
 Agent: "List all API resources under $1"
@@ -111,7 +111,7 @@ Agent: "Do I have enough to buy the premium API?"
 
 ### Tools Not Showing Up
 1. Make sure Claude Desktop is completely restarted
-2. Check the path to `superpage-x402.js` is correct
+2. Check the path to `AgentPay-x402.js` is correct
 3. Verify Node.js is installed: `node --version`
 
 ### Connection Errors
@@ -143,7 +143,7 @@ When ready to use production server:
 ```json
 {
   "env": {
-    "SUPERPAGE_SERVER": "http://20.168.79.130",
+    "AgentPay_SERVER": "http://20.168.79.130",
     "WALLET_PRIVATE_KEY": "your-production-wallet-key",
     "X402_CHAIN": "bite-v2-sandbox",
     "X402_CURRENCY": "USDC",

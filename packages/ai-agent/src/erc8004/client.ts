@@ -1,6 +1,6 @@
 /**
  * ERC-8004 Client for the buyer agent.
- * Uses Flow EVM Testnet (chainId 545).
+ * Uses Sepolia (chainId 11155111).
  */
 import {
   createPublicClient,
@@ -12,7 +12,7 @@ import {
   type WalletClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { flowTestnet } from "viem/chains";
+import { sepolia } from "viem/chains";
 import {
   IDENTITY_REGISTRY_ABI,
   REPUTATION_REGISTRY_ABI,
@@ -28,7 +28,7 @@ export const ERC8004_CONTRACTS = {
     "0x0bfff9626f409639c8501c14813ddba6f30d5a99" as Address,
 } as const;
 
-const FLOW_RPC = "https://testnet.evm.nodes.onflow.org";
+const SEPOLIA_RPC = "https://ethereum-sepolia-rpc.publicnode.com";
 
 const ZERO_BYTES32 =
   "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
@@ -71,14 +71,14 @@ export class ERC8004Client {
     this.address = account.address;
 
     this.publicClient = createPublicClient({
-      chain: flowTestnet,
-      transport: http(FLOW_RPC),
+      chain: sepolia,
+      transport: http(SEPOLIA_RPC),
     });
 
     this.walletClient = createWalletClient({
       account,
-      chain: flowTestnet,
-      transport: http(FLOW_RPC),
+      chain: sepolia,
+      transport: http(SEPOLIA_RPC),
     });
   }
 

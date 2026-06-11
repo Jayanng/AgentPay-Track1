@@ -39,7 +39,7 @@ const sampleStores = [
     url: "https://test-store.myshopify.com",
     description: "A test Shopify store",
     currency: "USDC",
-    networks: ["flow-testnet"],
+    networks: ["sepolia"],
   },
 ];
 
@@ -76,8 +76,8 @@ const sampleCheckoutPhase1 = {
     currency: "USD",
   },
   paymentRequirements: {
-    network: "flow-testnet",
-    chainId: 545,
+    network: "sepolia",
+    chainId: 11155111,
     token: "USDC",
     amount: "32400000",
     recipient: "0x19eaEBaFA1f54d5100877584782DdcC26EB39D36",
@@ -95,8 +95,8 @@ const sampleOrderConfirmed = {
 
 const samplePaymentProof = {
   transactionHash: "0xd53bbe15ae80e0b6476cdbe2ab5b45f7a21a0a2330b406a0531bd65f07dbc531",
-  network: "flow-testnet",
-  chainId: 545,
+  network: "sepolia",
+  chainId: 11155111,
   timestamp: 1774932282423,
 };
 
@@ -264,8 +264,8 @@ describe("initiate_checkout", () => {
     expect(result.orderIntentId).toBe("oi_abc123");
     expect(result.amounts.total).toBe("32.40");
     expect(result.amounts.currency).toBe("USD");
-    expect(result.paymentRequirements.network).toBe("flow-testnet");
-    expect(result.paymentRequirements.chainId).toBe(545);
+    expect(result.paymentRequirements.network).toBe("sepolia");
+    expect(result.paymentRequirements.chainId).toBe(11155111);
     expect(result.paymentRequirements.token).toBe("USDC");
     expect(result.paymentRequirements.amount).toBe("32400000");
     expect(result.nextStep).toContain("make_payment");
@@ -405,8 +405,8 @@ describe("finalize_checkout", () => {
     // Verify X-PAYMENT header
     const xPayment = JSON.parse(options.headers["X-PAYMENT"]);
     expect(xPayment.transactionHash).toBe(samplePaymentProof.transactionHash);
-    expect(xPayment.network).toBe("flow-testnet");
-    expect(xPayment.chainId).toBe(545);
+    expect(xPayment.network).toBe("sepolia");
+    expect(xPayment.chainId).toBe(11155111);
 
     // Verify body includes orderIntentId
     const body = JSON.parse(options.body);
@@ -449,7 +449,7 @@ describe("finalize_checkout", () => {
   it("should validate paymentProof fields", async () => {
     const result = await toolRegistry.execute("finalize_checkout", {
       ...finalizeArgs,
-      paymentProof: { network: "flow-testnet" }, // missing transactionHash
+      paymentProof: { network: "sepolia" }, // missing transactionHash
     });
 
     expect(result.success).toBe(false);

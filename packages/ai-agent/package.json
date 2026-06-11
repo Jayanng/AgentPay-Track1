@@ -6,7 +6,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "superpage": "./dist/index.js"
+    "AgentPay": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/index.ts",

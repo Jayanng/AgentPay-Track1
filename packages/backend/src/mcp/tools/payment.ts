@@ -80,6 +80,27 @@ const makePaymentTool = defineTool({
     }
 
     const privateKey = process.env.WALLET_PRIVATE_KEY || process.env.ETH_PRIVATE_KEY;
+    const walletMode = process.env.WALLET_MODE || 'direct';
+
+    if (walletMode === 'caw') {
+      try {
+        const { cawService } = await import('../../services/cobo-caw.js');
+        const result = await cawService.transferTokens(
+          recipientAddress,
+          amount,
+          'SETH',
+          'SETH',
+          `payment-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        );
+        return { success: true, transaction_hash: result.transaction_hash, status: 'submitted' };
+      } catch (error: any) {
+        if (error.status === 403) {
+          return { success: false, status: 'BLOCKED', reason: error.details?.reason || error.message, policy: 'Buyer Policy' };
+        }
+        return { success: false, error: error.message };
+      }
+    }
+
     if (!privateKey) {
       return { success: false, error: "WALLET_PRIVATE_KEY not configured on server" };
     }
@@ -226,6 +247,17 @@ const getBalanceTool = defineTool({
   handler: async ({ address, token = "USDC", network: networkArg }) => {
     const chainConfig = getChainConfig();
     const network = networkArg || chainConfig.network;
+    const walletMode = process.env.WALLET_MODE || 'direct';
+
+    if (walletMode === 'caw') {
+      try {
+        const { cawService } = await import('../../services/cobo-caw.js');
+        const balance = await cawService.getBalance();
+        return { success: true, balance, currency: 'SETH' };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    }
 
     const privateKey = process.env.WALLET_PRIVATE_KEY || process.env.ETH_PRIVATE_KEY;
     const walletAddress = address || (privateKey ? privateKeyToAccount(privateKey as `0x${string}`).address : null);

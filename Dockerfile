@@ -1,4 +1,4 @@
-# SuperPage Production Dockerfile — linux/amd64 only
+# AgentPay Production Dockerfile — linux/amd64 only
 FROM --platform=linux/amd64 node:22-slim
 
 RUN npm install -g pnpm tsx pm2
@@ -24,7 +24,7 @@ RUN cd packages/x402-sdk-eth && npx tsup src/index.ts --format cjs,esm --dts
 
 # Build Next.js frontend (env vars baked at build time)
 ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_X402_CHAIN=flow-testnet
+ARG NEXT_PUBLIC_X402_CHAIN=sepolia
 ARG NEXT_PUBLIC_X402_CURRENCY=USDC
 ARG NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \

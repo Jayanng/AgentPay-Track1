@@ -64,10 +64,10 @@ pnpm install`} language="bash" />
     "x402": {
       "command": "node",
       "args": [
-        "/path/to/USDC/packages/mcp-client/superpage-x402.js"
+        "/path/to/USDC/packages/mcp-client/AgentPay-x402.js"
       ],
       "env": {
-        "SUPERPAGE_SERVER": "http://localhost:3001",
+        "AgentPay_SERVER": "http://localhost:3001",
         "WALLET_PRIVATE_KEY": "0xYourPrivateKey",
         "ETH_NETWORK": "mainnet",
         "MAX_AUTO_PAYMENT": "10.00"

@@ -1,8 +1,8 @@
-# x402 Shopify Commerce Backend
+﻿# x402 Shopify Commerce Backend
 
 A backend service for integrating Shopify stores with HTTP 402 Payment Required protocol for cryptocurrency payments (USDC on Solana).
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### 1. Install Dependencies
 ```bash
@@ -21,7 +21,7 @@ X402_NETWORK=devnet
 X402_RECIPIENT_ADDRESS=YourSolanaWalletAddress
 
 # Payment Wallet (for AI agent)
-WALLET_SECRET_KEY=YourBase58PrivateKey
+WALLET_PRIVATE_KEY=YourBase58PrivateKey
 
 # Server Ports
 PORT=3001
@@ -46,7 +46,7 @@ This starts:
 pnpm run test:flow
 ```
 
-## 📚 Documentation
+## ðŸ“š Documentation
 - **[X402 Flow Guide](./X402_FLOW_GUIDE.md)** - Complete flow documentation with diagrams
 - **[Testing Guide](./TESTING.md)** - Testing instructions
 
@@ -754,7 +754,7 @@ SUPABASE_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Solana
-WALLET_SECRET_KEY=base58-encoded-private-key
+WALLET_PRIVATE_KEY=base58-encoded-private-key
 X402_RECIPIENT_ADDRESS=wallet-address
 
 # Server
@@ -827,3 +827,4 @@ Error responses include:
 ## Integration Examples
 
 See `/packages/frontend` for client-side integration examples with Web3.js and Solana.
+

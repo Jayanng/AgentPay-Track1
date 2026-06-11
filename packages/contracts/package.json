@@ -1,7 +1,7 @@
 {
-  "name": "@superpage/contracts",
+  "name": "@AgentPay/contracts",
   "version": "1.0.0",
-  "description": "Smart contracts for SuperPage x402 - MockUSDC and test tokens",
+  "description": "Smart contracts for AgentPay x402 - MockUSDC and test tokens",
   "private": true,
   "type": "module",
   "scripts": {

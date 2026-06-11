@@ -122,7 +122,7 @@ export default function FaucetPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">USDC Faucet</h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Get free test mUSDC tokens on {PAYMENT_CHAIN.name}. Mint as much as you need for testing SuperPage.
+            Get free test mUSDC tokens on {PAYMENT_CHAIN.name}. Mint as much as you need for testing AgentPay.
           </p>
         </div>
 
@@ -253,7 +253,7 @@ export default function FaucetPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Gas</span>
-              <span className="font-medium text-primary">FLOW (~$0.01)</span>
+              <span className="font-medium text-primary">ETH (~$0.01)</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">Contract</span>

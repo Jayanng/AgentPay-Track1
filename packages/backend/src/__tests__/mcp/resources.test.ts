@@ -67,8 +67,8 @@ const sampleResources = {
 
 const paymentRequirements402 = {
   scheme: "spay",
-  network: "flow-testnet",
-  chainId: 545,
+  network: "sepolia",
+  chainId: 11155111,
   token: "USDC",
   amount: "10000",
   recipient: "0x19eaEBaFA1f54d5100877584782DdcC26EB39D36",
@@ -182,8 +182,8 @@ describe("access_resource", () => {
     expect(result.success).toBe(false);
     expect(result.status).toBe(402);
     expect(result.details).toBeDefined();
-    expect(result.details.network).toBe("flow-testnet");
-    expect(result.details.chainId).toBe(545);
+    expect(result.details.network).toBe("sepolia");
+    expect(result.details.chainId).toBe(11155111);
     expect(result.details.token).toBe("USDC");
     expect(result.details.amount).toBe("10000");
   });
@@ -204,8 +204,8 @@ describe("access_resource", () => {
     const result = await toolRegistry.execute("access_resource", {
       resourceId: "weather-api",
       transactionHash: "0xd53bbe15ae80e0b6476cdbe2ab5b45f7a21a0a2330b406a0531bd65f07dbc531",
-      network: "flow-testnet",
-      chainId: 545,
+      network: "sepolia",
+      chainId: 11155111,
     });
 
     expect(result.success).toBe(true);
@@ -242,7 +242,7 @@ describe("access_resource", () => {
     const result = await toolRegistry.execute("access_resource", {
       resourceId: "weather-api",
       transactionHash: "0xinvalidhash",
-      network: "flow-testnet",
+      network: "sepolia",
     });
 
     expect(result.success).toBe(false);

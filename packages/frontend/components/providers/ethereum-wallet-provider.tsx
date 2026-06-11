@@ -2,42 +2,37 @@
 
 import { ReactNode, useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, getDefaultConfig, darkTheme } from "@rainbow-me/rainbowkit";
-import { mainnet, sepolia, base, baseSepolia, polygon, arbitrum, optimism, flowMainnet, flowTestnet } from "wagmi/chains";
-import { cronos, cronosTestnet, mantleSepolia, biteV2Sandbox } from "@/lib/chains";
+import { WagmiProvider, createConfig } from "wagmi";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { http } from "viem";
+import { baseSepolia, base, mainnet, sepolia } from "wagmi/chains";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const queryClient = new QueryClient();
 
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+const isWalletConfigured = projectId && projectId !== "placeholder" && projectId !== "YOUR_PROJECT_ID";
+
 // All supported chains - Base first since it's the default
 const supportedChains = [
-  flowTestnet,      // Default testnet (x402 payment chain)
-  flowMainnet,      // Flow EVM mainnet
   baseSepolia,      // Base testnet
   base,             // Base mainnet
   mainnet,          // Ethereum mainnet
   sepolia,          // Ethereum testnet
-  polygon,          // Polygon mainnet
-  arbitrum,         // Arbitrum mainnet
-  optimism,         // Optimism mainnet
-  biteV2Sandbox,    // SKALE testnet
-  cronosTestnet,    // Cronos testnet
-  cronos,           // Cronos mainnet
-  mantleSepolia,    // Mantle testnet
 ] as const;
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-if (!projectId || projectId === "YOUR_PROJECT_ID") {
-  console.error("WalletConnect project ID not configured. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID");
-}
-
-const config = getDefaultConfig({
-  appName: "SuperPage",
-  projectId: projectId || "YOUR_PROJECT_ID",
-  chains: supportedChains,
-  ssr: true,
-});
+// Only create Wagmi config if WalletConnect is properly configured
+const config = isWalletConfigured
+  ? createConfig({
+      chains: supportedChains,
+      transports: {
+        [baseSepolia.id]: http(),
+        [base.id]: http(),
+        [mainnet.id]: http(),
+        [sepolia.id]: http(),
+      },
+    })
+  : null;
 
 interface EthereumWalletProviderProps {
   children: ReactNode;
@@ -50,16 +45,22 @@ export function EthereumWalletProvider({ children }: EthereumWalletProviderProps
     setMounted(true);
   }, []);
 
+  // If WalletConnect is not configured, render children without wallet providers
+  if (!isWalletConfigured || !config) {
+    if (!mounted) return null;
+    return <>{children}</>;
+  }
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={darkTheme({
-            accentColor: "#5B8FB9", // SuperPage blue from logo
+            accentColor: "#5B8FB9", // AgentPay blue from logo
             accentColorForeground: "white",
             borderRadius: "medium",
           })}
-          initialChain={flowTestnet}
+          initialChain={sepolia}
         >
           {mounted ? children : null}
         </RainbowKitProvider>

@@ -7,9 +7,10 @@ import "dotenv/config";
 
 export interface AgentConfig {
   // LLM
-  llmProvider: "anthropic" | "openai" | "google";
+  llmProvider: "anthropic" | "openai" | "google" | "gmi";
   llmModel: string;
   llmApiKey: string;
+  gmiBaseUrl?: string;
 
   // Merchant
   merchantUrl: string;
@@ -36,17 +37,20 @@ export function loadConfig(): AgentConfig {
   const provider = (process.env.LLM_PROVIDER || "anthropic") as
     | "anthropic"
     | "openai"
-    | "google";
+    | "google"
+    | "gmi";
 
   const apiKeyMap: Record<string, string | undefined> = {
     anthropic: process.env.ANTHROPIC_API_KEY,
     openai: process.env.OPENAI_API_KEY,
     google: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
+    gmi: process.env.GMI_API_KEY,
   };
   const envVarMap: Record<string, string> = {
     anthropic: "ANTHROPIC_API_KEY",
     openai: "OPENAI_API_KEY",
     google: "GOOGLE_GENERATIVE_AI_API_KEY",
+    gmi: "GMI_API_KEY",
   };
 
   const llmApiKey = apiKeyMap[provider];
@@ -63,16 +67,17 @@ export function loadConfig(): AgentConfig {
     llmProvider: provider,
     llmModel:
       process.env.LLM_MODEL ||
-      ({ anthropic: "claude-sonnet-4-20250514", openai: "gpt-4o", google: "gemini-2.0-flash" }[provider] ?? "claude-sonnet-4-20250514"),
+      ({ anthropic: "claude-sonnet-4-20250514", openai: "gpt-4o", google: "gemini-2.0-flash", gmi: "glm-5.1" }[provider] ?? "claude-sonnet-4-20250514"),
     llmApiKey,
+    gmiBaseUrl: process.env.GMI_BASE_URL || "https://api.gmicloud.ai/v1",
     merchantUrl: process.env.MERCHANT_URL || "http://localhost:1337",
     walletPrivateKey: walletPrivateKey as `0x${string}`,
-    network: process.env.X402_CHAIN || "flow-testnet",
-    chainId: parseInt(process.env.CHAIN_ID || "545", 10),
+    network: process.env.X402_CHAIN || "sepolia",
+    chainId: parseInt(process.env.CHAIN_ID || "11155111", 10),
     rpcUrl:
-      process.env.RPC_URL || "https://testnet.evm.nodes.onflow.org",
+      process.env.RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
     usdcAddress:
-      (process.env.USDC_ADDRESS || "0x291b030d596cf505f774426d8de7c946ce5af7a5") as `0x${string}`,
+      (process.env.USDC_ADDRESS || "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238") as `0x${string}`,
     erc8004AgentId: process.env.ERC8004_AGENT_ID || undefined,
     maxSteps: parseInt(process.env.MAX_STEPS || "20", 10),
     autoApprovePayments: process.env.AUTO_APPROVE_PAYMENTS === "true",

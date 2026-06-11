@@ -1,5 +1,5 @@
 /**
- * Shopping tools for SuperPage x402.
+ * Shopping tools for AgentPay x402.
  */
 
 import {

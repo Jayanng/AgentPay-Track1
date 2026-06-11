@@ -104,7 +104,7 @@ async function main() {
   console.log(`  - packages/backend/src/config/chain-config.ts`);
   console.log(`  - packages/frontend/hooks/use-x402-payment.ts`);
   console.log(`  - packages/frontend/app/faucet/page.tsx`);
-  console.log(`  - packages/mcp-client/superpage-x402.js`);
+  console.log(`  - packages/mcp-client/AgentPay-x402.js`);
 }
 
 main().catch((error) => {

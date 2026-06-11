@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 
 // Payment scheme types
-// "spay" = SuperPage exact-amount scheme, "exact" = standard x402, "upto" = usage-based billing
+// "spay" = AgentPay exact-amount scheme, "exact" = standard x402, "upto" = usage-based billing
 export const PaymentSchemeSchema = z.enum(["exact", "spay", "upto"]);
 export type PaymentScheme = z.infer<typeof PaymentSchemeSchema>;
 
@@ -26,14 +26,12 @@ export const NetworkSchema = z.enum([
   "cronos",        // Cronos Mainnet
   "cronos-testnet", // Cronos Testnet
   "bite-v2-sandbox",    // BITE V2 Sandbox 2 (SKALE)
-  "flow",          // Flow EVM Mainnet
-  "flow-testnet",  // Flow EVM Testnet
 ]);
 export type Network = z.infer<typeof NetworkSchema>;
 
 // Token types supported on EVM chains
 // ETH = native token on Ethereum-family chains; other native tokens per chain
-export const TokenTypeSchema = z.enum(["ETH", "USDC", "USDT", "DAI", "CRO", "MNT", "sFUEL", "FLOW"]);
+export const TokenTypeSchema = z.enum(["ETH", "USDC", "USDT", "DAI", "CRO", "MNT", "sFUEL"]);
 export type TokenType = z.infer<typeof TokenTypeSchema>;
 
 /**

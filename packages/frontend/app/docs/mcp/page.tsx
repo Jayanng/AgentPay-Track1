@@ -84,7 +84,7 @@ export default function MCPDocsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">Step 1: Locate MCP Client</h3>
                 <p className="text-muted-foreground mb-3">
-                  The MCP client is located at <code className="bg-muted px-2 py-1 rounded">packages/mcp-client/superpage-x402.js</code>
+                  The MCP client is located at <code className="bg-muted px-2 py-1 rounded">packages/mcp-client/AgentPay-x402.js</code>
                 </p>
                 <CodeBlock code={`cd packages/mcp-client
 pnpm install`} language="bash" />
@@ -108,10 +108,10 @@ pnpm install`} language="bash" />
     "x402": {
       "command": "node",
       "args": [
-        "/absolute/path/to/USDC/packages/mcp-client/superpage-x402.js"
+        "/absolute/path/to/USDC/packages/mcp-client/AgentPay-x402.js"
       ],
       "env": {
-        "SUPERPAGE_SERVER": "http://localhost:3001",
+        "AgentPay_SERVER": "http://localhost:3001",
         "WALLET_PRIVATE_KEY": "0xYourPrivateKeyHere",
         "ETH_NETWORK": "mainnet",
         "MAX_AUTO_PAYMENT": "10.00"
@@ -138,7 +138,7 @@ pnpm install`} language="bash" />
             <CardContent>
               <div className="space-y-4">
                 <div className="border-l-4 border-primary pl-4">
-                  <h4 className="font-bold text-foreground mb-2">SUPERPAGE_SERVER</h4>
+                  <h4 className="font-bold text-foreground mb-2">AgentPay_SERVER</h4>
                   <p className="text-muted-foreground mb-1">URL of your x402 backend server</p>
                   <code className="text-sm bg-muted px-2 py-1 rounded">http://localhost:3001</code>
                 </div>
@@ -305,7 +305,7 @@ pnpm install`} language="bash" />
 
               <div>
                 <p className="font-semibold text-foreground mb-2">Connection errors?</p>
-                <p>Verify that your x402 backend is running on the specified port (default: 3001) and that the SUPERPAGE_SERVER URL is correct.</p>
+                <p>Verify that your x402 backend is running on the specified port (default: 3001) and that the AgentPay_SERVER URL is correct.</p>
               </div>
 
               <div>

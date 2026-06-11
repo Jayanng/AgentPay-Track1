@@ -1,6 +1,6 @@
 # Stacks Integration Guide
 
-SuperPage supports **Stacks** (Bitcoin L2) as a payment chain alongside EVM networks. This enables accepting **USDCx** (Circle-backed USDC on Stacks) and **sBTC** (1:1 Bitcoin-backed) payments through the x402 protocol.
+AgentPay supports **Stacks** (Bitcoin L2) as a payment chain alongside EVM networks. This enables accepting **USDCx** (Circle-backed USDC on Stacks) and **sBTC** (1:1 Bitcoin-backed) payments through the x402 protocol.
 
 ## Overview
 
@@ -60,7 +60,7 @@ The MCP client detects Stacks networks and uses `@stacks/transactions` for SIP-0
 
 ```bash
 # Run MCP agent on Stacks
-X402_CHAIN=stacks X402_CURRENCY=USDCx node superpage-x402.js
+X402_CHAIN=stacks X402_CURRENCY=USDCx node AgentPay-x402.js
 ```
 
 The agent wallet will derive a Stacks address (SP... for mainnet, ST... for testnet) from the same private key. Balance queries use the Hiro API.

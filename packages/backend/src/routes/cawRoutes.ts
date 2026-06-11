@@ -1,0 +1,280 @@
+/**
+ * CAW (Cobo Agentic Wallet) Routes
+ * Exposes wallet balance, pacts, transactions, and demo endpoints.
+ */
+
+import { Router } from 'express';
+import { cawService } from '../services/cobo-caw.js';
+
+const router: Router = Router();
+const POLICY_DENIAL_CODES = new Set(['TRANSFER_LIMIT_EXCEEDED', 'POLICY_DENIED']);
+const NETWORK_CODES = new Set([
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'EHOSTUNREACH',
+  'EAI_AGAIN',
+  'EACCES',
+]);
+
+function getStatusCode(error: any): number | undefined {
+  return error?.status || error?.statusCode || error?.response?.status;
+}
+
+function getErrorCode(error: any): string | undefined {
+  return (
+    error?.code ||
+    error?.cause?.code ||
+    error?.response?.data?.error?.code ||
+    error?.body?.error?.code ||
+    error?.error?.code
+  );
+}
+
+function isNetworkFailure(error: any): boolean {
+  const code = getErrorCode(error);
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    (code ? NETWORK_CODES.has(code) : false) ||
+    message.includes('network') ||
+    message.includes('timed out') ||
+    message.includes('unable to connect') ||
+    message.includes('fetch failed') ||
+    message.includes('getaddrinfo')
+  );
+}
+
+// ==================== Wallet ====================
+
+// GET /api/caw/wallet — Full wallet info (address, balance, pacts, recent txs)
+router.get('/wallet', async (_req, res) => {
+  try {
+    const [balance, pacts, recentTxs] = await Promise.all([
+      cawService.getBalance(),
+      cawService.listPacts(),
+      cawService.listTransactions(10),
+    ]);
+
+    res.json({
+      wallet: {
+        address: process.env.CAW_ETH_ADDRESS || '',
+        balance,
+        uuid: process.env.CAW_WALLET_UUID || '',
+      },
+      pacts,
+      recentTxs,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch wallet info' });
+  }
+});
+
+// GET /api/caw/health — CAW API connectivity check
+router.get('/health', async (_req, res) => {
+  try {
+    const balance = await cawService.getBalance();
+    res.json({
+      status: 'connected',
+      api_url: process.env.CAW_API_URL,
+      wallet_uuid: process.env.CAW_WALLET_UUID,
+      wallet_address: process.env.CAW_ETH_ADDRESS,
+      balance,
+    });
+  } catch (error: any) {
+    const code = getErrorCode(error);
+    res.status(502).json({
+      status: 'disconnected',
+      api_url: process.env.CAW_API_URL,
+      error: error?.message,
+      code,
+    });
+  }
+});
+
+// GET /api/caw/balance — Just the balance
+router.get('/balance', async (_req, res) => {
+  try {
+    const balance = await cawService.getBalance();
+    res.json({ balance, currency: 'SETH' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch balance' });
+  }
+});
+
+// GET /api/caw/pacts — List all pacts
+router.get('/pacts', async (_req, res) => {
+  try {
+    const pacts = await cawService.listPacts();
+    res.json({ pacts });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch pacts' });
+  }
+});
+
+// GET /api/caw/transactions — Recent transactions
+router.get('/transactions', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const txs = await cawService.listTransactions(limit);
+    res.json({ transactions: txs });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch transactions' });
+  }
+});
+
+// ==================== Pact Management ====================
+
+// POST /api/pacts/submit — Submit a new pact
+router.post('/submit', async (req, res) => {
+  try {
+    const { intent, spec } = req.body;
+    if (!intent || !spec) {
+      res.status(400).json({ error: 'intent and spec are required' });
+      return;
+    }
+    const pact = await cawService.submitPact(intent, spec);
+    res.json(pact);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to submit pact' });
+  }
+});
+
+// GET /api/pacts/:id — Get pact status
+router.get('/:id', async (req, res) => {
+  try {
+    const pact = await cawService.getPact(req.params.id);
+    res.json(pact);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch pact' });
+  }
+});
+
+// GET /api/pacts — List all pacts (alias)
+router.get('/', async (_req, res) => {
+  try {
+    const pacts = await cawService.listPacts();
+    res.json({ pacts });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch pacts' });
+  }
+});
+
+// POST /api/pacts/:id/revoke — Revoke a pact
+router.post('/:id/revoke', async (req, res) => {
+  try {
+    const result = await cawService.revokePact(req.params.id);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to revoke pact' });
+  }
+});
+
+// ==================== Demo Endpoints ====================
+
+// POST /api/demo/blocked-transaction — Try to transfer 0.01 ETH (exceeds 0.005 limit)
+router.post('/blocked-transaction', async (_req, res) => {
+  try {
+    const result = await cawService.transferTokens(
+      '0x0000000000000000000000000000000000000001',
+      '0.01',
+      'SETH',
+      'SETH',
+      `demo-blocked-${Date.now()}`
+    );
+    res.json({
+      status: 'ALLOWED',
+      message: 'Transaction was not blocked - policy may not be active',
+      result,
+    });
+  } catch (error: any) {
+    const statusCode = getStatusCode(error);
+    const errorCode = getErrorCode(error);
+
+    if (statusCode === 403 || (errorCode ? POLICY_DENIAL_CODES.has(errorCode) : false)) {
+      const errorDetails = error?.response?.data?.error || error?.body?.error || error?.details || {};
+      res.json({
+        status: 'BLOCKED',
+        reason: errorDetails?.reason || 'Transaction exceeds Buyer Policy spend limit',
+        policy: 'Buyer Policy - max 0.005 ETH per transaction',
+        attempted_amount: '0.01 ETH',
+        limit: '0.005 ETH',
+        error_code: errorCode,
+        error_details: errorDetails,
+      });
+      return;
+    }
+
+    if (statusCode === 401 || errorCode === 'UNAUTHORIZED') {
+      res.status(502).json({
+        status: 'ERROR',
+        message: 'CAW API authentication failed - check CAW_API_KEY',
+        error: error?.message,
+      });
+      return;
+    }
+
+    if (isNetworkFailure(error)) {
+      res.status(502).json({
+        status: 'ERROR',
+        message: 'Cannot reach Cobo Agentic Wallet API - check network connectivity',
+        error: error?.message,
+      });
+      return;
+    }
+
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Unexpected error during transaction',
+      error: error?.message,
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
+    });
+  }
+});
+
+// POST /api/demo/allowed-transaction — Try to transfer 0.001 ETH (within limits)
+router.post('/allowed-transaction', async (_req, res) => {
+  try {
+    const result = await cawService.transferTokens(
+      '0x0000000000000000000000000000000000000001',
+      '0.001',
+      'SETH',
+      'SETH',
+      `demo-allowed-${Date.now()}`
+    );
+    res.json({
+      status: 'APPROVED',
+      message: 'Transaction passed Buyer Policy checks',
+      transaction_hash: result.transaction_hash || (result as any).id,
+      amount: '0.001 ETH',
+    });
+  } catch (error: any) {
+    const statusCode = getStatusCode(error);
+    const errorCode = getErrorCode(error);
+    if (statusCode === 403) {
+      res.json({
+        status: 'BLOCKED',
+        reason: 'Transaction was blocked by policy',
+        error: error?.message,
+      });
+      return;
+    }
+
+    if (statusCode === 401 || errorCode === 'UNAUTHORIZED') {
+      res.status(502).json({
+        status: 'ERROR',
+        message: 'CAW API authentication failed - check CAW_API_KEY',
+        error: error?.message,
+      });
+      return;
+    }
+
+    res.status(502).json({
+      status: 'ERROR',
+      message: 'Cannot reach CAW API',
+      error: error?.message,
+    });
+  }
+});
+
+export default router;

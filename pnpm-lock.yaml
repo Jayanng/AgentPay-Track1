@@ -7,7 +7,6 @@ settings:
 overrides:
   '@reown/appkit-controllers': 1.7.8
   signal-exit: ^4.1.0
-  path-to-regexp: ^8.4.0
   picomatch: ^4.0.4
   flatted: ^3.4.2
   undici: ^6.24.0
@@ -70,6 +69,9 @@ importers:
 
   packages/backend:
     dependencies:
+      '@cobo/agentic-wallet':
+        specifier: ^0.1.7
+        version: 0.1.7
       '@modelcontextprotocol/sdk':
         specifier: ^1.21.1
         version: 1.25.2(hono@4.11.4)(zod@4.3.5)
@@ -533,6 +535,9 @@ packages:
 
   '@base-org/account@2.4.0':
     resolution: {integrity: sha512-A4Umpi8B9/pqR78D1Yoze4xHyQaujioVRqqO3d6xuDFw9VRtjg6tK3bPlwE0aW+nVH/ntllCpPa2PbI8Rnjcug==}
+
+  '@cobo/agentic-wallet@0.1.7':
+    resolution: {integrity: sha512-9OflDQsqqEV5zFw5C9ueCL+hzW0qxQbnho924RBQoIetLidGEaND54TCoQPNITFdyTdUFG0CfOY2NF2I/dJaRg==}
 
   '@coinbase/cdp-sdk@1.44.1':
     resolution: {integrity: sha512-O7sikX7gTZdF4xy9b0xAMPOKWk8z6E7an4EGVBukPdfChooBL15Zt6B8Wn5th/LC1V1nIf3J/tlTTQCJLkKZ6A==}
@@ -6220,6 +6225,9 @@ packages:
   path-parse@1.0.7:
     resolution: {integrity: sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==}
 
+  path-to-regexp@0.1.13:
+    resolution: {integrity: sha512-A/AGNMFN3c8bOlvV9RreMdrv7jsmF9XIfDeCd87+I8RNg6s78BhJxMu69NEMHBSJFxKidViTEdruRwEk/WIKqA==}
+
   path-to-regexp@8.4.1:
     resolution: {integrity: sha512-fvU78fIjZ+SBM9YwCknCvKOUKkLVqtWDVctl0s7xIqfmfb38t2TT4ZU2gHm+Z8xGwgW+QWEU3oQSAzIbo89Ggw==}
 
@@ -7489,6 +7497,7 @@ packages:
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   valtio@1.13.2:
@@ -8119,6 +8128,12 @@ snapshots:
       - use-sync-external-store
       - utf-8-validate
       - zod
+
+  '@cobo/agentic-wallet@0.1.7':
+    dependencies:
+      axios: 1.13.6
+    transitivePeerDependencies:
+      - debug
 
   '@coinbase/cdp-sdk@1.44.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)':
     dependencies:
@@ -13294,7 +13309,7 @@ snapshots:
       methods: 1.1.2
       on-finished: 2.4.1
       parseurl: 1.3.3
-      path-to-regexp: 8.4.1
+      path-to-regexp: 0.1.13
       proxy-addr: 2.0.7
       qs: 6.14.1
       range-parser: 1.2.1
@@ -15543,6 +15558,8 @@ snapshots:
   path-key@3.1.1: {}
 
   path-parse@1.0.7: {}
+
+  path-to-regexp@0.1.13: {}
 
   path-to-regexp@8.4.1: {}
 

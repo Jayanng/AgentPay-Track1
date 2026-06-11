@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import "dotenv/config";
 
 const BASE_URL = process.argv[2] || "http://localhost:3001";
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/superpage";
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/AgentPay";
 
 // Map resource names to local file paths and filenames
 const FILE_URL_MAP: Record<string, { external_url: string; filename: string }> = {

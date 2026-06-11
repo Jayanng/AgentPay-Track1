@@ -128,8 +128,9 @@ async function main() {
     // ============================================================
     console.log("💳 STEP 3: Checking wallet configuration...\n");
 
-    if (!process.env.WALLET_SECRET_KEY) {
-      console.error("❌ WALLET_SECRET_KEY not set in .env!");
+    const walletSecret = process.env.WALLET_PRIVATE_KEY || process.env.ETH_PRIVATE_KEY;
+    if (!walletSecret) {
+      console.error("❌ WALLET_PRIVATE_KEY (or ETH_PRIVATE_KEY) not set in .env!");
       console.log("   Please add your Solana wallet private key to .env");
       console.log("   This wallet needs devnet USDC to make payments.\n");
       console.log("📝 To test manually:");
@@ -144,14 +145,13 @@ async function main() {
     // Load wallet
     let wallet: Keypair;
     try {
-      const secretKey = process.env.WALLET_SECRET_KEY;
-      const decoded = bs58.decode(secretKey);
+      const decoded = bs58.decode(walletSecret);
       wallet = Keypair.fromSecretKey(decoded);
       console.log(`✅ Wallet loaded: ${wallet.publicKey.toBase58()}\n`);
     } catch (err: any) {
       console.error("❌ Failed to load wallet!");
       console.error(`   Error: ${err.message}`);
-      console.log("\n   Make sure WALLET_SECRET_KEY is a valid base58-encoded private key.\n");
+      console.log("\n   Make sure WALLET_PRIVATE_KEY is a valid base58-encoded private key for this script.\n");
       process.exit(1);
     }
 

@@ -1,5 +1,5 @@
 /**
- * Order tracking tools for SuperPage x402.
+ * Order tracking tools for AgentPay x402.
  */
 
 import {

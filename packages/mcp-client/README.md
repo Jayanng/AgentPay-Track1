@@ -1,4 +1,4 @@
-# SUPERPAGE x402 - MCP Client for AI Agents
+# AgentPay x402 - MCP Client for AI Agents
 
 An MCP (Model Context Protocol) client that enables AI agents like Claude to shop and pay using USDC stablecoin on SKALE (zero gas fees).
 
@@ -23,11 +23,11 @@ Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "superpage-x402": {
+    "AgentPay-x402": {
       "command": "node",
-      "args": ["/absolute/path/to/superpay-x402-eth/packages/mcp-client/superpage-x402.js"],
+      "args": ["/absolute/path/to/superpay-x402-eth/packages/mcp-client/AgentPay-x402.js"],
       "env": {
-        "SUPERPAGE_SERVER": "http://localhost:3001",
+        "AgentPay_SERVER": "http://localhost:3001",
         "WALLET_PRIVATE_KEY": "0xYourPrivateKeyHere",
         "X402_CHAIN": "bite-v2-sandbox",
         "X402_CURRENCY": "USDC",
@@ -42,7 +42,7 @@ Add to your `claude_desktop_config.json`:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `SUPERPAGE_SERVER` | SuperPage backend server URL | `http://localhost:3001` |
+| `AgentPay_SERVER` | AgentPay backend server URL | `http://localhost:3001` |
 | `WALLET_PRIVATE_KEY` | Ethereum private key (with 0x prefix) | Required for payments |
 | `X402_CHAIN` | Network (`bite-v2-sandbox`, `mainnet`, `sepolia`, etc.) | `bite-v2-sandbox` |
 | `X402_CURRENCY` | Payment currency (`USDC`, `USDT`, `DAI`) | `USDC` |
@@ -202,7 +202,7 @@ Set the `WALLET_PRIVATE_KEY` environment variable with your Ethereum private key
 Make sure your wallet has enough USDC tokens and ETH for gas fees.
 
 ### "Failed to connect to server"
-Ensure the x402 backend is running at the URL specified in `SUPERPAGE_SERVER`.
+Ensure the x402 backend is running at the URL specified in `AgentPay_SERVER`.
 
 ---
 

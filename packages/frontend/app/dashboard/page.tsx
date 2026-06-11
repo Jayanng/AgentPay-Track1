@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CawStatusPanel } from "@/components/caw-status-panel";
 import {
   DollarSign,
   Layers,
@@ -222,6 +223,9 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full space-y-6 md:space-y-8">
+      {/* CAW Status Panel */}
+      <CawStatusPanel />
+
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-2xl md:rounded-3xl min-h-[180px] md:min-h-[220px] flex flex-col justify-end p-6 md:p-8 bg-gradient-to-br from-sp-blue via-sp-pink to-sp-gold group">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.15),transparent_60%)]" />

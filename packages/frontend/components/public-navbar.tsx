@@ -38,6 +38,7 @@ export function PublicNavbar() {
 
   const navLinks = [
     { href: "/", label: "Home", show: true },
+    { href: "/#caw-wallet", label: "CAW Wallet", show: true },
     { href: "/explore", label: "Explore", show: true },
     { href: "/docs", label: "Docs", show: true },
     { href: "/faucet", label: "Faucet", show: true },
@@ -59,10 +60,8 @@ export function PublicNavbar() {
           <div className="flex items-center justify-between h-16">
             {/* Logo + Wordmark */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <Image src="/logo.png" alt="SuperPage" width={32} height={32} className="h-8 w-auto" />
-              <span className="text-lg font-bold tracking-tight">
-                Super<span className="text-primary">Page</span>
-              </span>
+              <Image src="/logo.png" alt="AgentPay" width={32} height={32} className="h-8 w-auto" />
+              <span className="text-lg font-bold tracking-tight">AgentPay</span>
             </Link>
 
             {/* Desktop nav links */}

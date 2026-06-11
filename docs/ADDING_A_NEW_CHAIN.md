@@ -1,6 +1,6 @@
-# Adding a New Chain to SuperPage
+# Adding a New Chain to AgentPay
 
-This guide covers every file and configuration change required to add a new EVM-compatible chain to SuperPage.
+This guide covers every file and configuration change required to add a new EVM-compatible chain to AgentPay.
 
 ## Overview
 
@@ -14,20 +14,19 @@ The codebase is modular — each package owns its own chain config. There is no 
 
 Before starting, gather:
 
-| Info | Example (Flow) |
+| Info | Example (Sepolia) |
 |------|-----------------|
-| Chain ID (mainnet) | 747 |
-| Chain ID (testnet) | 545 |
-| RPC URL | `https://testnet.evm.nodes.onflow.org` |
-| Block explorer | `https://evm-testnet.flowscan.io` |
-| Native token symbol | FLOW |
+| Chain ID | 11155111 |
+| RPC URL | `https://ethereum-sepolia-rpc.publicnode.com` |
+| Block explorer | `https://sepolia.etherscan.io` |
+| Native token symbol | ETH |
 | Native token decimals | 18 |
-| USDC address (if exists on mainnet) | `0xF1815bd50389c46847f0Bda824eC8da914045D14` |
-| Testnet faucet URL | `https://faucet.flow.com/fund-account` |
+| USDC address (if exists) | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` |
+| Testnet faucet URL | `https://faucet.chainstack.com/sepolia-faucet` |
 
 Check if viem has a built-in chain definition:
 ```ts
-import { flowTestnet } from "viem/chains"; // works for standard chains
+import { sepolia } from "viem/chains"; // works for standard chains
 ```
 
 If not, you'll need a custom `defineChain()` call (see Section 3).
@@ -90,7 +89,7 @@ export type NetworkId =
 
 **B. Add to `NativeTokenSymbol` type** (if new native token):
 ```ts
-export type NativeTokenSymbol = "ETH" | "MATIC" | "MNT" | "CRO" | "sFUEL" | "FLOW" | "YOUR_TOKEN";
+export type NativeTokenSymbol = "ETH" | "MATIC" | "MNT" | "CRO"   | "sFUEL" | "YOUR_TOKEN";
 ```
 
 **C. Add custom chain definition** (only if not in `viem/chains`):
@@ -323,7 +322,7 @@ export const NetworkSchema = z.enum([
 
 **B. Add to `TokenTypeSchema`** (if new native token):
 ```ts
-export const TokenTypeSchema = z.enum(["ETH", "USDC", "USDT", "DAI", "CRO", "MNT", "sFUEL", "FLOW", "TKN"]);
+export const TokenTypeSchema = z.enum(["ETH", "USDC", "USDT", "DAI", "CRO", "MNT", "sFUEL", "TKN"]);
 ```
 
 ### 3.10 — MCP client wallet (`packages/mcp-client/src/wallet.js`)
@@ -379,7 +378,7 @@ import { yourChainTestnet } from "viem/chains";
 
 ### 4.1 — Create deployment script
 
-Copy `packages/contracts/scripts/deploy-flow.ts` as a template. Key changes:
+Copy `packages/contracts/scripts/deploy-sepolia.ts` as a template. Key changes:
 
 ```ts
 import { yourChainTestnet } from "viem/chains";
@@ -634,10 +633,10 @@ curl -s http://localhost:1337/.well-known/agent-registration.json
 
 ### Wallet support
 - Standard EVM wallets (MetaMask, WalletConnect) work for all EVM chains
-- Chain-specific wallets (e.g., Flow Wallet) may need additional SDK integration (FCL)
+- Standard EVM wallets (MetaMask, WalletConnect) work for all EVM chains
 
 ### Block explorer verification
-- Flowscan, Etherscan-compatible explorers work with Hardhat verify plugin
+- Etherscan-compatible explorers work with Hardhat verify plugin
 - Non-standard explorers may not support contract verification
 
 ---
