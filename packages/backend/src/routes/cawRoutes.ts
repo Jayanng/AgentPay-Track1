@@ -124,6 +124,34 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
+// GET /api/caw/debug — Full diagnostic info (pacts with raw data, balance, wallet info)
+router.get('/debug', async (_req, res) => {
+  try {
+    const [balance, walletInfo, pacts, txs] = await Promise.all([
+      cawService.getBalance().catch((e) => `Error: ${e.message}`),
+      cawService.getWalletInfo().catch((e) => `Error: ${e.message}`),
+      cawService.listPacts().catch((e) => `Error: ${e.message}`),
+      cawService.listTransactions(5).catch((e) => `Error: ${e.message}`),
+    ]);
+
+    res.json({
+      env: {
+        CAW_API_URL: process.env.CAW_API_URL,
+        CAW_WALLET_UUID: process.env.CAW_WALLET_UUID,
+        CAW_ETH_ADDRESS: process.env.CAW_ETH_ADDRESS,
+        CAW_AGENT_ID: process.env.CAW_AGENT_ID,
+        CHAIN: process.env.CHAIN,
+      },
+      balance,
+      walletInfo,
+      pacts,
+      recentTxs: txs,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/caw/fund-deployer — Send SETH from CAW wallet to deployer address
 // Used to fund the escrow contract deployer wallet
 router.post('/fund-deployer', async (req, res) => {

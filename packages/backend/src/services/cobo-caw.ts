@@ -347,7 +347,17 @@ export class CoboCAWService {
     try {
       const response = await pactsApi.listPacts(undefined, this.walletUuid, undefined, undefined, undefined, 100);
       const data = response.data as any;
-      const list = data?.result?.items ?? data?.result?.list ?? data?.items ?? data?.list ?? [];
+      console.log('[CAW] listPacts raw response:', JSON.stringify(data, null, 2)?.slice(0, 1200));
+
+      // CAW API returns { success: true, result: [...] } where result IS the array (same as balance)
+      let list: any[] = [];
+      if (Array.isArray(data?.result)) list = data.result;
+      else if (Array.isArray(data?.result?.items)) list = data.result.items;
+      else if (Array.isArray(data?.result?.list)) list = data.result.list;
+      else if (Array.isArray(data?.items)) list = data.items;
+      else if (Array.isArray(data?.list)) list = data.list;
+      else if (Array.isArray(data)) list = data;
+
       return list.map((p: any) => ({
         id: p.id || p.pact_id,
         status: p.status,
