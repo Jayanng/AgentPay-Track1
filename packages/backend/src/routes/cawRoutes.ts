@@ -152,6 +152,28 @@ router.get('/debug', async (_req, res) => {
   }
 });
 
+// POST /api/caw/reinit-pacts — Force re-submit all default pacts
+router.post('/reinit-pacts', async (_req, res) => {
+  try {
+    // Clear the guard so pacts can be re-submitted
+    (globalThis as any).__agentpayPactsInitialized = false;
+
+    // Dynamically import and call the initializer
+    const { initializeDefaultPacts } = await import('../services/pact-defaults.js');
+    await initializeDefaultPacts();
+
+    // Check what we have now
+    const pacts = await cawService.listPacts();
+    res.json({
+      message: 'Pact re-initialization complete',
+      pacts,
+      note: 'If pacts are PENDING_APPROVAL, approve them in the Cobo dashboard/app before transfers will work',
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message, caw_error: error?.cawResponse });
+  }
+});
+
 // POST /api/caw/fund-deployer — Send SETH from CAW wallet to deployer address
 // Used to fund the escrow contract deployer wallet
 router.post('/fund-deployer', async (req, res) => {

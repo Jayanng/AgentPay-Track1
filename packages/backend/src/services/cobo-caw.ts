@@ -151,11 +151,16 @@ export class CoboCAWService {
       if (ethBalance) {
         console.log('[CAW] Found balance entry:', JSON.stringify(ethBalance));
         const amount = ethBalance?.amount ?? ethBalance?.total ?? ethBalance?.available ?? ethBalance?.balance ?? '0';
-        // If amount is in wei (very large number), convert to ETH
-        if (typeof amount === 'string' && amount.length > 15) {
-          const weiVal = BigInt(amount);
-          const ethVal = Number(weiVal) / 1e18;
-          return ethVal.toFixed(6);
+        // CAW API returns amounts as decimal strings (e.g. "0.008973389279904")
+        // Only convert to ETH if it's clearly wei (very large integer, no decimal point)
+        if (typeof amount === 'string' && !amount.includes('.') && amount.length > 15) {
+          try {
+            const weiVal = BigInt(amount);
+            const ethVal = Number(weiVal) / 1e18;
+            return ethVal.toFixed(6);
+          } catch {
+            return String(amount);
+          }
         }
         return String(amount);
       }
