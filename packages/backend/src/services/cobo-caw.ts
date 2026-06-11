@@ -198,7 +198,10 @@ export class CoboCAWService {
   ): Promise<TransferResult> {
     try {
       // CAW API expects amount as a decimal string (e.g. "0.003", "1.5"), NOT wei
+      // CAW API requires src_addr even though SDK docs say it's optional
+      const srcAddr = process.env.CAW_ETH_ADDRESS || '';
       const transferBody: any = {
+        src_addr: srcAddr,
         dst_addr: dstAddr,
         amount,
         token_id: tokenId,
