@@ -127,6 +127,12 @@ export async function initializeDefaultPacts() {
       return;
     }
 
+    // Skip if pacts were already submitted in this process (tsx watch guard)
+    if ((globalThis as any).__agentpayPactsInitialized) {
+      console.log('[Pacts] Already initialized in this process, skipping');
+      return;
+    }
+
     const existingPacts = await cawService.listPacts();
     const activePacts = existingPacts.filter(
       (p) => p.status === 'ACTIVE' || p.status === 'active' || p.status === 'PENDING_APPROVAL'
@@ -134,6 +140,7 @@ export async function initializeDefaultPacts() {
 
     if (activePacts.length > 0) {
       console.log(`[Pacts] Already have ${activePacts.length} active/pending pact(s), skipping submission`);
+      (globalThis as any).__agentpayPactsInitialized = true;
       return;
     }
 
@@ -161,6 +168,7 @@ export async function initializeDefaultPacts() {
     console.log('[Pacts] Settler Policy submitted:', settlerPact.id);
 
     console.log('[Pacts] All default pacts submitted. Check CAW app for approval.');
+    (globalThis as any).__agentpayPactsInitialized = true;
   } catch (error: any) {
     console.error('[Pacts] Failed to initialize default pacts:', error.message);
     // Don't throw — allow server to start even if pact submission fails

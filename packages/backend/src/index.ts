@@ -35,7 +35,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Startup guard — prevent duplicate banner/logging on tsx watch restarts
-let bannerPrinted = false;
+// Use globalThis so it survives module re-evaluation by tsx watch
+if (!(globalThis as any).__agentpayBannerPrinted) {
+  (globalThis as any).__agentpayBannerPrinted = false;
+}
 
 const corsOptions = {
   origin: [
@@ -253,8 +256,8 @@ async function startServer() {
 
     // Start Express server
     app.listen(PORT, () => {
-      if (bannerPrinted) return; // Skip duplicate banner on tsx watch restart
-      bannerPrinted = true;
+      if ((globalThis as any).__agentpayBannerPrinted) return; // Skip duplicate banner on tsx watch restart
+      (globalThis as any).__agentpayBannerPrinted = true;
 
       const walletMode = process.env.WALLET_MODE || 'direct';
       console.log(`\n${"=".repeat(60)}`);

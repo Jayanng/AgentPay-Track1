@@ -122,14 +122,15 @@ export class CoboCAWService {
       console.log('[CAW] Balance API raw response:', JSON.stringify(data, null, 2)?.slice(0, 800));
 
       // Try multiple response formats that the CAW API might return
+      // CAW API returns: { success: true, result: [...] } where result IS the array
       let rows: any[] = [];
-      if (Array.isArray(data?.result?.items)) rows = data.result.items;
+      if (Array.isArray(data?.result)) rows = data.result;           // ✅ CAW actual format
+      else if (Array.isArray(data?.result?.items)) rows = data.result.items;
       else if (Array.isArray(data?.result?.list)) rows = data.result.list;
       else if (Array.isArray(data?.items)) rows = data.items;
       else if (Array.isArray(data?.list)) rows = data.list;
       else if (Array.isArray(data?.data?.items)) rows = data.data.items;
       else if (Array.isArray(data?.data?.list)) rows = data.data.list;
-      // If the response itself is an array (some API versions)
       else if (Array.isArray(data)) rows = data;
 
       // Search for ETH balance with flexible matching
