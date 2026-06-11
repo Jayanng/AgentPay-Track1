@@ -287,7 +287,7 @@ async function startServer() {
       console.log(`  CAW:       GET  /api/caw/wallet, /api/caw/health, /api/caw/balance`);
       console.log(`  Pacts:     GET  /api/caw/pacts, POST /api/caw/submit`);
       console.log(`  Escrow:    POST /api/escrow/create, /api/escrow/:id/confirm, /api/escrow/:id/release`);
-      console.log(`  Demo:      POST /api/caw/blocked-transaction, /api/caw/allowed-transaction, /api/caw/onchain-flow`);
+      console.log(`  Demo:      POST /api/caw/blocked-transaction, /api/caw/allowed-transaction, /api/caw/onchain-flow, /api/caw/fund-deployer`);
       console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {

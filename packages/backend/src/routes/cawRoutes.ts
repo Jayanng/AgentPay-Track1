@@ -124,6 +124,66 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
+// POST /api/caw/fund-deployer — Send SETH from CAW wallet to deployer address
+// Used to fund the escrow contract deployer wallet
+router.post('/fund-deployer', async (req, res) => {
+  try {
+    const { address, amount } = req.body;
+    if (!address || !amount) {
+      res.status(400).json({ error: 'address and amount are required' });
+      return;
+    }
+    if (!address.startsWith('0x') || address.length !== 42) {
+      res.status(400).json({ error: 'Invalid Ethereum address' });
+      return;
+    }
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0 || numAmount > 0.005) {
+      res.status(400).json({ error: 'Amount must be between 0 and 0.005 ETH (Pact policy limit)' });
+      return;
+    }
+
+    const result = await cawService.transferTokens(
+      address,
+      String(numAmount),
+      'SETH',
+      'SETH',
+      `fund-deployer-${Date.now()}`
+    );
+
+    res.json({
+      status: 'FUNDED',
+      message: `Sent ${amount} SETH to deployer address`,
+      destination: address,
+      amount: `${amount} SETH`,
+      transaction_hash: result.transaction_hash,
+      etherscan: result.transaction_hash
+        ? `https://sepolia.etherscan.io/tx/${result.transaction_hash}`
+        : undefined,
+    });
+  } catch (error: any) {
+    const statusCode = getStatusCode(error);
+    const errorCode = getErrorCode(error);
+
+    if (statusCode === 403 || (errorCode ? POLICY_DENIAL_CODES.has(errorCode) : false)) {
+      const errorDetails = error?.response?.data?.error || error?.body?.error || error?.details || {};
+      res.json({
+        status: 'BLOCKED',
+        reason: errorDetails?.reason || 'Pact policy blocked this transfer',
+        message: 'Transfer exceeds Buyer Policy spend limit (max 0.005 ETH per tx)',
+        error: error?.message,
+      });
+      return;
+    }
+
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to fund deployer',
+      error: error?.message,
+    });
+  }
+});
+
 // ==================== Pact Management ====================
 
 // POST /api/pacts/submit — Submit a new pact
