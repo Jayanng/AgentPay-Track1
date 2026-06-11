@@ -239,13 +239,16 @@ export class CoboCAWService {
 
   async submitPact(intent: string, spec: any): Promise<PactInfo> {
     try {
-      const response = await pactsApi.submitPact({
+      const requestBody = {
         wallet_id: this.walletUuid,
         intent,
         spec,
-      });
+      };
+      console.log('[CAW] Submitting pact:', JSON.stringify(requestBody, null, 2).slice(0, 500));
+      const response = await pactsApi.submitPact(requestBody);
       const data = response.data as any;
       const result = data?.result ?? data?.data ?? data;
+      console.log('[CAW] Pact response:', JSON.stringify(data, null, 2).slice(0, 500));
       return {
         id: result.id || result.pact_id,
         status: result.status,
@@ -253,6 +256,9 @@ export class CoboCAWService {
         api_key: result.api_key,
       };
     } catch (error: any) {
+      // Log the full error for debugging
+      const errData = error?.response?.data || error?.response?.body || {};
+      console.error('[CAW] Pact submission error:', error.message, JSON.stringify(errData).slice(0, 500));
       parseCawError(error);
       return { id: '', status: 'error' }; // unreachable
     }

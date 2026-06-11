@@ -1,6 +1,11 @@
 /**
  * Default Pact Policies for AgentPay
  * Submits buyer, seller, and settler policies on backend startup.
+ *
+ * CAW Pact API requires:
+ *   - spec.execution_plan (required, markdown string)
+ *   - spec.policies[].rules.deny_if.usage_limits (for rolling window limits)
+ *   - spec.completion_conditions (required)
  */
 
 import { cawService } from './cobo-caw';
@@ -8,6 +13,20 @@ import { cawService } from './cobo-caw';
 const CAW_ETH_ADDRESS = process.env.CAW_ETH_ADDRESS || '0xa22c5d0840aae11a5483ca6dff12206905320496';
 
 const BUYER_PACT_SPEC = {
+  execution_plan: `# Buyer Spending Policy
+
+## Summary
+Buyer spending policy for Sepolia ETH transfers on AgentPay marketplace.
+
+## Operations
+- Transfer up to 0.005 ETH per transaction on SETH (Sepolia)
+- Maximum 20 transactions per 24-hour rolling window
+
+## Risk Controls
+- Per-tx cap: 0.005 ETH
+- Rolling 24h limit: 20 transactions
+- Pact expires after 7 days`,
+
   policies: [
     {
       name: 'buyer-spend-limit',
@@ -18,17 +37,32 @@ const BUYER_PACT_SPEC = {
           chain_in: ['SETH'],
           token_in: [{ chain_id: 'SETH', token_id: 'SETH' }],
         },
-        deny_if: { amount_gt: '0.005' },
-        rolling_window: { window: '24h', max_tx_count: 20 },
+        deny_if: {
+          amount_gt: '0.005',
+          usage_limits: {
+            rolling_24h: { tx_count_gt: 20 },
+          },
+        },
       },
-      priority: 0,
-      is_active: true,
     },
   ],
-  completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }], // 7 days
+  completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
 };
 
 const SELLER_PACT_SPEC = {
+  execution_plan: `# Seller Receive-Only Policy
+
+## Summary
+Seller policy that only allows receiving payments to the agent wallet address.
+
+## Operations
+- Receive SETH transfers to the agent wallet
+- No outbound transfers allowed under this pact
+
+## Risk Controls
+- Only inbound transfers to designated address
+- Pact expires after 7 days`,
+
   policies: [
     {
       name: 'seller-receive-only',
@@ -38,17 +72,29 @@ const SELLER_PACT_SPEC = {
         when: {
           chain_in: ['SETH'],
           token_in: [{ chain_id: 'SETH', token_id: 'SETH' }],
-          destination_address_in: [CAW_ETH_ADDRESS],
+          destination_address_in: [{ chain_id: 'SETH', address: CAW_ETH_ADDRESS }],
         },
       },
-      priority: 0,
-      is_active: true,
     },
   ],
   completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
 };
 
 const SETTLER_PACT_SPEC = {
+  execution_plan: `# Settler Escrow Policy
+
+## Summary
+Settler policy for escrow operations with approval escalation for large amounts.
+
+## Operations
+- Execute escrow contract calls on SETH
+- Transfers above 0.01 ETH require owner approval
+
+## Risk Controls
+- Approval required for amounts above 0.01 ETH
+- Rolling 24h: max 10 transactions
+- Pact expires after 7 days`,
+
   policies: [
     {
       name: 'settler-escrow-limits',
@@ -59,11 +105,15 @@ const SETTLER_PACT_SPEC = {
           chain_in: ['SETH'],
           token_in: [{ chain_id: 'SETH', token_id: 'SETH' }],
         },
-        require_approval_if: { amount_gt: '0.01' },
-        rolling_window: { window: '24h', max_tx_count: 10, max_usd: '50' },
+        review_if: {
+          amount_gt: '0.01',
+        },
+        deny_if: {
+          usage_limits: {
+            rolling_24h: { tx_count_gt: 10 },
+          },
+        },
       },
-      priority: 0,
-      is_active: true,
     },
   ],
   completion_conditions: [{ type: 'time_elapsed', threshold: '604800' }],
@@ -71,13 +121,19 @@ const SETTLER_PACT_SPEC = {
 
 export async function initializeDefaultPacts() {
   try {
+    // Skip if CAW is not configured
+    if (!process.env.CAW_API_KEY || !process.env.CAW_WALLET_UUID) {
+      console.log('[Pacts] CAW not configured, skipping pact initialization');
+      return;
+    }
+
     const existingPacts = await cawService.listPacts();
     const activePacts = existingPacts.filter(
       (p) => p.status === 'ACTIVE' || p.status === 'active' || p.status === 'PENDING_APPROVAL'
     );
 
     if (activePacts.length > 0) {
-      console.log('[Pacts] Already have active/pending pacts, skipping submission');
+      console.log(`[Pacts] Already have ${activePacts.length} active/pending pact(s), skipping submission`);
       return;
     }
 
@@ -104,7 +160,7 @@ export async function initializeDefaultPacts() {
     );
     console.log('[Pacts] Settler Policy submitted:', settlerPact.id);
 
-    console.log('[Pacts] All default pacts submitted. Owner must approve in Cobo Agentic Wallet app.');
+    console.log('[Pacts] All default pacts submitted. Check CAW app for approval.');
   } catch (error: any) {
     console.error('[Pacts] Failed to initialize default pacts:', error.message);
     // Don't throw — allow server to start even if pact submission fails
