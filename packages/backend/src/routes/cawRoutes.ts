@@ -62,6 +62,7 @@ router.get('/wallet', async (_req, res) => {
         balance,
         uuid: process.env.CAW_WALLET_UUID || '',
       },
+      escrowContract: process.env.ESCROW_CONTRACT_ADDRESS || '',
       pacts,
       recentTxs,
     });
@@ -247,6 +248,9 @@ router.post('/allowed-transaction', async (_req, res) => {
       message: 'Transaction passed Buyer Policy checks',
       transaction_hash: result.transaction_hash || (result as any).id,
       amount: '0.001 ETH',
+      etherscan: result.transaction_hash
+        ? `https://sepolia.etherscan.io/tx/${result.transaction_hash}`
+        : undefined,
     });
   } catch (error: any) {
     const statusCode = getStatusCode(error);
@@ -274,6 +278,114 @@ router.post('/allowed-transaction', async (_req, res) => {
       message: 'Cannot reach CAW API',
       error: error?.message,
     });
+  }
+});
+
+// POST /api/demo/onchain-flow — Full on-chain escrow demo
+// 1. Tests Pact policy with a small transfer
+// 2. Returns TX hash + Etherscan verification links
+router.post('/onchain-flow', async (_req, res) => {
+  const flowResult: any = {
+    steps: [],
+    wallet: {
+      address: process.env.CAW_ETH_ADDRESS || '',
+      etherscan: `https://sepolia.etherscan.io/address/${process.env.CAW_ETH_ADDRESS}`,
+    },
+    escrowContract: process.env.ESCROW_CONTRACT_ADDRESS || null,
+  };
+
+  try {
+    // Step 1: Check wallet balance
+    const balance = await cawService.getBalance();
+    flowResult.steps.push({
+      step: 1,
+      name: 'Wallet Balance Check',
+      status: 'SUCCESS',
+      balance: `${balance} SETH`,
+    });
+
+    // Step 2: Attempt a micro-transfer (0.0001 ETH) to prove on-chain capability
+    if (Number(balance) > 0.001) {
+      try {
+        const transferResult = await cawService.transferTokens(
+          '0x0000000000000000000000000000000000000001',
+          '0.0001',
+          'SETH',
+          'SETH',
+          `onchain-demo-${Date.now()}`
+        );
+        flowResult.steps.push({
+          step: 2,
+          name: 'Micro Transfer (Pact Policy Check)',
+          status: 'APPROVED',
+          amount: '0.0001 SETH',
+          transaction_hash: transferResult.transaction_hash,
+          etherscan: transferResult.transaction_hash
+            ? `https://sepolia.etherscan.io/tx/${transferResult.transaction_hash}`
+            : undefined,
+          message: 'Transaction passed Buyer Policy (max 0.005 ETH per tx)',
+        });
+      } catch (txError: any) {
+        const errorCode = getErrorCode(txError);
+        if (getStatusCode(txError) === 403 || (errorCode ? POLICY_DENIAL_CODES.has(errorCode) : false)) {
+          flowResult.steps.push({
+            step: 2,
+            name: 'Micro Transfer (Pact Policy Check)',
+            status: 'BLOCKED_BY_POLICY',
+            message: 'Pact policy blocked this transaction',
+            error: txError?.message,
+          });
+        } else {
+          flowResult.steps.push({
+            step: 2,
+            name: 'Micro Transfer (Pact Policy Check)',
+            status: 'ERROR',
+            error: txError?.message,
+          });
+        }
+      }
+    } else {
+      flowResult.steps.push({
+        step: 2,
+        name: 'Micro Transfer (Pact Policy Check)',
+        status: 'SKIPPED',
+        message: 'Insufficient balance for test transfer. Fund wallet with SETH first.',
+      });
+    }
+
+    // Step 3: Escrow contract status
+    if (process.env.ESCROW_CONTRACT_ADDRESS) {
+      flowResult.steps.push({
+        step: 3,
+        name: 'Escrow Contract',
+        status: 'DEPLOYED',
+        address: process.env.ESCROW_CONTRACT_ADDRESS,
+        etherscan: `https://sepolia.etherscan.io/address/${process.env.ESCROW_CONTRACT_ADDRESS}`,
+      });
+    } else {
+      flowResult.steps.push({
+        step: 3,
+        name: 'Escrow Contract',
+        status: 'NOT_DEPLOYED',
+        message: 'Deploy with: cd packages/contracts && DEPLOY_PRIVATE_KEY=0x... pnpm deploy:escrow',
+      });
+    }
+
+    // Step 4: List active pacts
+    const pacts = await cawService.listPacts();
+    const activePacts = pacts.filter((p: any) => p.status === 'ACTIVE' || p.status === 'active');
+    flowResult.steps.push({
+      step: 4,
+      name: 'Active Pact Policies',
+      status: activePacts.length > 0 ? 'ACTIVE' : 'NO_PACTS',
+      count: activePacts.length,
+      pacts: activePacts.map((p: any) => ({ id: p.id, intent: p.intent, status: p.status })),
+    });
+
+    res.json(flowResult);
+  } catch (error: any) {
+    flowResult.error = error.message;
+    res.status(500).json(flowResult);
   }
 });
 

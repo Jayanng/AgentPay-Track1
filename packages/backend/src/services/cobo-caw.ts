@@ -109,6 +109,7 @@ export class CoboCAWService {
 
   async getBalance(): Promise<string> {
     try {
+      console.log('[CAW] Fetching balance for wallet:', this.walletUuid);
       const response = await balanceApi.listBalances(
         this.walletUuid,
         undefined,
@@ -118,10 +119,51 @@ export class CoboCAWService {
         20
       );
       const data = response.data as any;
-      const rows = data?.result?.items ?? data?.result?.list ?? data?.items ?? data?.list ?? [];
-      const ethBalance = rows.find((b: any) => b?.token_id === 'SETH' || b?.chain_id === 'SETH');
-      return ethBalance?.amount ?? ethBalance?.total ?? '0';
+      console.log('[CAW] Balance API raw response:', JSON.stringify(data, null, 2)?.slice(0, 800));
+
+      // Try multiple response formats that the CAW API might return
+      let rows: any[] = [];
+      if (Array.isArray(data?.result?.items)) rows = data.result.items;
+      else if (Array.isArray(data?.result?.list)) rows = data.result.list;
+      else if (Array.isArray(data?.items)) rows = data.items;
+      else if (Array.isArray(data?.list)) rows = data.list;
+      else if (Array.isArray(data?.data?.items)) rows = data.data.items;
+      else if (Array.isArray(data?.data?.list)) rows = data.data.list;
+      // If the response itself is an array (some API versions)
+      else if (Array.isArray(data)) rows = data;
+
+      // Search for ETH balance with flexible matching
+      const ethBalance = rows.find((b: any) =>
+        b?.token_id === 'SETH' ||
+        b?.chain_id === 'SETH' ||
+        b?.token_id === 'ETH' ||
+        b?.symbol === 'SETH' ||
+        b?.symbol === 'ETH' ||
+        b?.asset_id === 'SETH'
+      );
+
+      if (ethBalance) {
+        console.log('[CAW] Found balance entry:', JSON.stringify(ethBalance));
+        const amount = ethBalance?.amount ?? ethBalance?.total ?? ethBalance?.available ?? ethBalance?.balance ?? '0';
+        // If amount is in wei (very large number), convert to ETH
+        if (typeof amount === 'string' && amount.length > 15) {
+          const weiVal = BigInt(amount);
+          const ethVal = Number(weiVal) / 1e18;
+          return ethVal.toFixed(6);
+        }
+        return String(amount);
+      }
+
+      // If no rows found but data has a direct balance field
+      if (data?.result?.amount !== undefined) return String(data.result.amount);
+      if (data?.result?.total !== undefined) return String(data.result.total);
+      if (data?.amount !== undefined) return String(data.amount);
+      if (data?.total !== undefined) return String(data.total);
+
+      console.log('[CAW] No SETH balance found in response, rows count:', rows.length);
+      return '0';
     } catch (error: any) {
+      console.error('[CAW] Balance fetch error:', error.message);
       parseCawError(error);
       return '0'; // unreachable but satisfies TypeScript
     }
@@ -130,8 +172,10 @@ export class CoboCAWService {
   async getWalletInfo(): Promise<any> {
     try {
       const response = await walletsApi.getWallet(this.walletUuid);
+      console.log('[CAW] Wallet info:', JSON.stringify(response.data, null, 2)?.slice(0, 500));
       return response.data;
     } catch (error: any) {
+      console.error('[CAW] Wallet info error:', error.message);
       parseCawError(error);
       return null; // unreachable
     }

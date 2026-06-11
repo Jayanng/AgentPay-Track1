@@ -25,6 +25,7 @@ interface CawStatus {
   wallet: { address: string; balance: string; uuid: string };
   pacts: Pact[];
   recentTxs: Transaction[];
+  escrowContract?: string;
 }
 
 export function CawStatusPanel() {
@@ -136,6 +137,27 @@ export function CawStatusPanel() {
         )}
       </div>
 
+      {/* Escrow Contract Status */}
+      <div className="flex flex-wrap items-center gap-4 text-sm">
+        <div>
+          <span className="text-muted-foreground">Escrow Contract:</span>
+          {status.escrowContract && status.escrowContract.startsWith('0x') ? (
+            <a
+              href={`${ETHERSCAN_URL}/address/${status.escrowContract}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-xs font-mono text-primary hover:underline"
+            >
+              {status.escrowContract.slice(0, 6)}...{status.escrowContract.slice(-4)}
+            </a>
+          ) : (
+            <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+              Not Deployed
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Active Pacts */}
       <div>
         <h3 className="font-semibold text-foreground mb-2">Pact Policies</h3>
@@ -164,7 +186,7 @@ export function CawStatusPanel() {
       <div>
         <h3 className="font-semibold text-foreground mb-2">Recent Transactions</h3>
         {status.recentTxs?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No transactions yet.</p>
+          <p className="text-sm text-muted-foreground">No transactions yet. Try the demo endpoints!</p>
         ) : (
           <div className="space-y-1">
             {status.recentTxs?.map((tx) => (
@@ -203,6 +225,25 @@ export function CawStatusPanel() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* On-Chain Verification */}
+      <div className="pt-2 border-t border-border/50">
+        <p className="text-xs text-muted-foreground">
+          All transactions verified on-chain via Cobo Agentic Wallet with Pact policy enforcement.
+          {walletAddress && (
+            <> Verify at{' '}
+              <a
+                href={`${ETHERSCAN_URL}/address/${walletAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Etherscan ↗
+              </a>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

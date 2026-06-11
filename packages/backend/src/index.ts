@@ -34,6 +34,9 @@ import { errorHandler } from "./middleware/errorHandler.js";
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Startup guard — prevent duplicate banner/logging on tsx watch restarts
+let bannerPrinted = false;
+
 const corsOptions = {
   origin: [
     "http://localhost:3000",
@@ -250,6 +253,9 @@ async function startServer() {
 
     // Start Express server
     app.listen(PORT, () => {
+      if (bannerPrinted) return; // Skip duplicate banner on tsx watch restart
+      bannerPrinted = true;
+
       const walletMode = process.env.WALLET_MODE || 'direct';
       console.log(`\n${"=".repeat(60)}`);
       console.log(`  AgentPay — AI × Web3 Hackathon (Track 1)`);
@@ -262,6 +268,7 @@ async function startServer() {
         console.log(`  Wallet UUID:${process.env.CAW_WALLET_UUID}`);
         console.log(`  ETH Addr:   ${process.env.CAW_ETH_ADDRESS}`);
         console.log(`  Chain:      ${process.env.CHAIN || 'SETH'}`);
+        console.log(`  Escrow:     ${process.env.ESCROW_CONTRACT_ADDRESS || 'NOT DEPLOYED'}`);
       }
       console.log(`${"=".repeat(60)}`);
       console.log(`\nEndpoints:`);
@@ -277,7 +284,7 @@ async function startServer() {
       console.log(`  CAW:       GET  /api/caw/wallet, /api/caw/health, /api/caw/balance`);
       console.log(`  Pacts:     GET  /api/caw/pacts, POST /api/caw/submit`);
       console.log(`  Escrow:    POST /api/escrow/create, /api/escrow/:id/confirm, /api/escrow/:id/release`);
-      console.log(`  Demo:      POST /api/caw/blocked-transaction, /api/caw/allowed-transaction`);
+      console.log(`  Demo:      POST /api/caw/blocked-transaction, /api/caw/allowed-transaction, /api/caw/onchain-flow`);
       console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {

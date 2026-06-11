@@ -8,6 +8,7 @@
     "compile": "hardhat compile",
     "deploy:skale": "npx tsx scripts/deploy-musdc.ts",
     "deploy:erc8004": "npx tsx scripts/deploy-erc8004.ts",
+    "deploy:escrow": "hardhat run scripts/deploy-escrow.ts --network sepolia",
     "mint": "npx tsx scripts/mint-musdc.ts",
     "clean": "hardhat clean"
   },
